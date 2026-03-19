@@ -281,34 +281,6 @@ erDiagram
         _ created_at
         _ updated_at
     }
-    INVENTORY_ITEMS {
-        _ id PK
-        _ user_id FK
-        _ item_type
-        _ item_name
-        _ item_rarity
-        _ tradeable_bool
-        _ acquired_at
-        _ created_at
-        _ updated_at
-    }
-    INVENTORY_TRANSACTIONS {
-        _ id PK
-        _ from_user_id FK
-        _ to_user_id FK
-        _ inventory_item_id FK
-        _ transaction_type
-        _ status
-        _ created_at
-    }
-    ACTIVITY_LOGS {
-        _ id PK
-        _ user_id FK
-        _ event_type
-        _ event_data_json
-        _ ip_address
-        _ created_at
-    }
     CACHE_USER_DATA {
         _ id PK
         _ user_id FK "AK"
@@ -335,8 +307,6 @@ erDiagram
     USERS ||--o{ NOTIFICATIONS : receives
     USERS ||--o{ CLOUD_SAVES : has
     USERS ||--o{ USER_ACHIEVEMENTS : unlocks
-    USERS ||--o{ INVENTORY_ITEMS : owns
-    USERS ||--o{ ACTIVITY_LOGS : generates
     USERS ||--o{ CACHE_USER_DATA : cached
     
     USER_WALLET ||--o{ WALLET_TRANSACTIONS : has
@@ -353,10 +323,24 @@ erDiagram
     FRIENDS }|--|| USERS : references
     
     ACHIEVEMENTS ||--o{ USER_ACHIEVEMENTS : unlocked_by
-    
-    INVENTORY_ITEMS ||--o{ INVENTORY_TRANSACTIONS : transferred_in
-    INVENTORY_ITEMS ||--o{ INVENTORY_TRANSACTIONS : transferred_out
 ```
+
+|Таблица|Описание|
+|:--:|:--:|
+|users||
+|user_profiles||
+|sessions||
+|user_wallet||
+|wallet_transactions||
+|games||
+|game_media||
+|user_library||
+|reviews||
+|friends||
+|notifications||
+|cloud_saves||
+|achievement||
+
 ## Источники данных
 - https://steamdb.info/app/753/charts
 - https://steamdb.info/app/753/charts/#max(для выяснения регистрации и авторизации)
