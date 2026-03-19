@@ -138,6 +138,225 @@ __RPS_пиковое = RPS_среднее * 2 = 2076__
 | `POST /api/auth/login` | `(DAU × 1.3) / 86 400` | **1 039** | **3 000–5 000** | ×3–5 | Утренний вход, пост-распродажный трафик, 2FA |
 | **ИТОГО** | — | **~8 600** | **~142 000–183 000** | — | Суммарная нагрузка на API-шлюз |
 
+
+## 4 Логическая БД
+```
+erDiagram
+    USERS {
+        _ id PK
+        _ email "AK"
+        _ password_hash
+        _ created_at
+        _ updated_at
+        _ last_login
+        _ region
+        _ preferences_json
+    }
+    USER_PROFILES {
+        _ id PK
+        _ user_id FK "AK"
+        _ avatar_url
+        _ display_name "AK"
+        _ bio
+        _ privacy_settings_json
+        _ created_at
+        _ updated_at
+    }
+    SESSIONS {
+        _ id PK
+        _ session_token "AK"
+        _ user_id FK
+        _ device_info
+        _ ip_address
+        _ created_at
+        _ expires_at
+    }
+    USER_WALLET {
+        _ id PK
+        _ user_id FK "AK"
+        _ balance_cents
+        _ currency
+        _ created_at
+        _ updated_at
+    }
+    WALLET_TRANSACTIONS {
+        _ id PK
+        _ user_wallet_id FK
+        _ amount_cents
+        _ transaction_type
+        _ payment_method
+        _ status
+        _ created_at
+    }
+    GAMES {
+        _ id PK
+        _ title "AK"
+        _ developer
+        _ publisher
+        _ release_date
+        _ price_cents
+        _ genres_json
+        _ tags_json
+        _ system_requirements_json
+        _ created_at
+        _ updated_at
+    }
+    GAME_MEDIA {
+        _ id PK
+        _ game_id FK
+        _ media_type
+        _ media_url
+        _ resolution
+        _ file_size_bytes
+        _ created_at
+    }
+    USER_LIBRARY {
+        _ id PK
+        _ user_id FK
+        _ game_id FK
+        _ owned_bool
+        _ installed_bool
+        _ cloud_save_enabled
+        _ playtime_minutes
+        _ last_played
+        _ created_at
+        _ updated_at
+    }
+    REVIEWS {
+        _ id PK
+        _ user_id FK
+        _ game_id FK
+        _ rating
+        _ title
+        _ body
+        _ helpful_count
+        _ created_at
+        _ updated_at
+    }
+    FRIENDS {
+        _ id PK
+        _ user_id FK
+        _ friend_id FK
+        _ status
+        _ since_date
+        _ created_at
+    }
+    NOTIFICATIONS {
+        _ id PK
+        _ user_id FK
+        _ notification_text
+        _ type
+        _ status
+        _ read_bool
+        _ created_at
+        _ updated_at
+    }
+    CLOUD_SAVES {
+        _ id PK
+        _ user_id FK
+        _ game_id FK
+        _ file_path
+        _ file_size_bytes
+        _ checksum
+        _ version
+        _ created_at
+        _ updated_at
+    }
+    ACHIEVEMENTS {
+        _ id PK
+        _ game_id FK
+        _ achievement_name
+        _ description
+        _ icon_url
+        _ points
+        _ created_at
+    }
+    USER_ACHIEVEMENTS {
+        _ id PK
+        _ user_id FK
+        _ achievement_id FK
+        _ unlocked_bool
+        _ unlocked_at
+        _ progress_percent
+        _ created_at
+        _ updated_at
+    }
+    INVENTORY_ITEMS {
+        _ id PK
+        _ user_id FK
+        _ item_type
+        _ item_name
+        _ item_rarity
+        _ tradeable_bool
+        _ acquired_at
+        _ created_at
+        _ updated_at
+    }
+    INVENTORY_TRANSACTIONS {
+        _ id PK
+        _ from_user_id FK
+        _ to_user_id FK
+        _ inventory_item_id FK
+        _ transaction_type
+        _ status
+        _ created_at
+    }
+    ACTIVITY_LOGS {
+        _ id PK
+        _ user_id FK
+        _ event_type
+        _ event_data_json
+        _ ip_address
+        _ created_at
+    }
+    CACHE_USER_DATA {
+        _ id PK
+        _ user_id FK "AK"
+        _ cached_data_json
+        _ expires_at
+        _ created_at
+        _ updated_at
+    }
+    CACHE_GAME_CATALOG {
+        _ id PK
+        _ game_id FK "AK"
+        _ cached_data_json
+        _ expires_at
+        _ created_at
+        _ updated_at
+    }
+
+    USERS ||--|| USER_PROFILES : has
+    USERS ||--o{ SESSIONS : has
+    USERS ||--|| USER_WALLET : has
+    USERS ||--o{ USER_LIBRARY : owns
+    USERS ||--o{ REVIEWS : writes
+    USERS ||--o{ FRIENDS : befriends
+    USERS ||--o{ NOTIFICATIONS : receives
+    USERS ||--o{ CLOUD_SAVES : has
+    USERS ||--o{ USER_ACHIEVEMENTS : unlocks
+    USERS ||--o{ INVENTORY_ITEMS : owns
+    USERS ||--o{ ACTIVITY_LOGS : generates
+    USERS ||--o{ CACHE_USER_DATA : cached
+    
+    USER_WALLET ||--o{ WALLET_TRANSACTIONS : has
+    
+    GAMES ||--o{ GAME_MEDIA : contains
+    GAMES ||--o{ USER_LIBRARY : in
+    GAMES ||--o{ REVIEWS : receives
+    GAMES ||--o{ ACHIEVEMENTS : has
+    GAMES ||--o{ CACHE_GAME_CATALOG : cached
+    
+    USER_LIBRARY }|--|| GAMES : contains
+    
+    FRIENDS }|--|| USERS : references
+    FRIENDS }|--|| USERS : references
+    
+    ACHIEVEMENTS ||--o{ USER_ACHIEVEMENTS : unlocked_by
+    
+    INVENTORY_ITEMS ||--o{ INVENTORY_TRANSACTIONS : transferred_in
+    INVENTORY_ITEMS ||--o{ INVENTORY_TRANSACTIONS : transferred_out
+```
 ## Источники данных
 - https://steamdb.info/app/753/charts
 - https://steamdb.info/app/753/charts/#max(для выяснения регистрации и авторизации)
