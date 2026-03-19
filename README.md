@@ -140,7 +140,7 @@ __RPS_пиковое = RPS_среднее * 2 = 2076__
 
 
 ## 4 Логическая БД
-```
+```mermaid
 erDiagram
     USERS {
         _ id PK
