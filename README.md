@@ -482,6 +482,7 @@ erDiagram
 ---
 
 ### 6.2 Схема физического размещения данных
+```
 
 flowchart TB
     subgraph PG["PostgreSQL 16 + Patroni"]
@@ -534,6 +535,7 @@ flowchart TB
     GAME_MEDIA_META --> GAME_MEDIA_FILES
     CLOUD_SAVES_META --> CLOUD_SAVE_FILES
     GAMES --> GAMES_INDEX
+```
 
 ---
 
