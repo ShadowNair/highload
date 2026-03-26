@@ -482,8 +482,7 @@ erDiagram
 ---
 
 ### 6.2 Схема физического размещения данных
-```
-
+```mermaid
 flowchart TB
     subgraph PG["PostgreSQL 16 + Patroni"]
         USERS["users"]
