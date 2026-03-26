@@ -462,48 +462,442 @@ erDiagram
 
 ## 6. Физическая схема БД
 
-### 6.1 Выбор СУБД по таблицам
+### 6.1 Общие принципы физической реализации
 
-| Логическая сущность                            | Физическое хранилище         | Причина                                                             |
-| ---------------------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
-| users, orders, payments, game_prices   | PostgreSQL                   | сильная консистентность, транзакции                                 |
-| sessions                                     | Redis Cluster                | TTL, низкая задержка                                                |
-| library_items                                | ScyllaDB                     | огромный объем, чтение по user_id, горизонтальное масштабирование |
-| reviews                                      | ScyllaDB                     | write-heavy, hot partitions по game_id                            |
-| cloud_save_meta                              | ScyllaDB                     | быстрый доступ по (user_id, game_id)                              |
-| cloud_save_blob, game_builds, game_media | S3-compatible Object Storage | дешево и масштабируемо для blob-данных                              |
-| search_index                                 | OpenSearch                   | полнотекстовый поиск, фильтры, фасеты                               |
-| event_log                                    | Kafka                        | асинхронная шина событий                                            |
-| аналитика                                      | ClickHouse                   | дешевые агрегации по огромному event stream                         |
+При переходе от логической модели к физической используются разные типы хранилищ в зависимости от профиля нагрузки и требований к консистентности:
 
-### 6.2 Индексы, шардинг, резервирование
+* PostgreSQL используется для транзакционных и сравнительно компактных данных, где важны строгая консистентность, уникальные ограничения и связи.
+* ScyllaDB используется для самых нагруженных пользовательских сущностей с большим количеством чтений и записей, где требуется горизонтальное масштабирование.
+* Redis Cluster используется для горячих данных с TTL: активных сессий, счетчиков непрочитанных уведомлений и кешей.
+* S3-совместимое object storage используется для бинарных объектов: файлов сохранений и медиа игры.
+* OpenSearch используется как денормализованный поисковый индекс по каталогу игр.
 
-| Сущность          | Ключ/индексы                                   | Шардирование            | Резервирование       |
-| ----------------- | ---------------------------------------------- | ----------------------- | -------------------- |
-| users           | PK user_id, UNIQUE email                   | hash by user_id       | primary + 2 replicas |
-| orders          | PK order_id, IDX (user_id, created_at)     | hash by user_id       | primary + 2 replicas |
-| payments        | PK payment_id, UNIQUE provider_txn_id      | hash by order_id      | primary + 2 replicas |
-| library_items   | PK ((user_id), game_id)                      | by user_id            | RF=3                 |
-| reviews         | PK ((game_id), created_at, review_id)        | by game_id            | RF=3                 |
-| cloud_save_meta | PK ((user_id, game_id), version_ts)          | by (user_id, game_id) | RF=3                 |
-| search_index    | doc id game_id, inverted index on title/tags | 24 shards               | 1 replica            |
-| object storage    | object key                                     | bucket by region/game   | EC 8+4               |
+На физическом уровне вносятся следующие изменения по сравнению с логической схемой:
 
-### 6.3 Бэкапы и доступ
-
-* PostgreSQL: daily full + WAL archiving + PITR 30 days.
-* ScyllaDB: incremental snapshots + restore drills.
-* Object storage: versioning + cross-region replication for critical buckets.
-* Redis: AOF + replica.
-* Kafka: replication factor 3.
-
-Балансировка подключений:
-
-* PostgreSQL через PgBouncer;
-* Redis через cluster-aware client;
-* Scylla/OpenSearch через native driver и token-aware routing.
+1. SESSIONS физически хранятся в Redis, а не в реляционной БД.
+2. GAME_MEDIA и CLOUD_SAVES делятся на метаданные и бинарные объекты. Метаданные хранятся в БД, сами файлы лежат в object storage.
+3. REVIEWS, FRIENDS, NOTIFICATIONS, USER_LIBRARY, USER_ACHIEVEMENTS денормализуются под основные шаблоны чтения.
+4. Для GAMES.title и USER_PROFILES.display_name не вводится физическая уникальность, так как такие ограничения создают ложные конфликты. Уникальность сохраняется по техническим идентификаторам и email.
 
 ---
+
+### 6.2 Схема физического размещения данных
+
+flowchart TB
+    subgraph PG["PostgreSQL 16 + Patroni"]
+        USERS["users"]
+        USER_PROFILES["user_profiles"]
+        USER_WALLET["user_wallet"]
+        WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"]
+        GAMES["games"]
+        GAME_MEDIA_META["game_media_meta"]
+        ACHIEVEMENTS["achievements"]
+    end
+
+    subgraph SCY["ScyllaDB Cluster"]
+        USER_LIBRARY["user_library_by_user"]
+        REVIEWS_GAME["reviews_by_game"]
+        REVIEWS_USER["reviews_by_user"]
+        FRIENDS["friends_by_user"]
+        NOTIFICATIONS["notifications_by_user"]
+        CLOUD_SAVES_META["cloud_saves_meta_by_user_game"]
+        USER_ACHIEVEMENTS["user_achievements_by_user"]
+    end
+
+    subgraph REDIS["Redis Cluster"]
+        SESSIONS["session:{token}"]
+        USER_SESSIONS["user_sessions:{user_id}"]
+        UNREAD["notifications_unread:{user_id}"]
+        HOT_CACHE["hot cache"]
+    end
+
+    subgraph S3["S3 / MinIO"]
+        GAME_MEDIA_FILES["bucket: game-media"]
+        CLOUD_SAVE_FILES["bucket: cloud-saves"]
+    end
+
+    subgraph OS["OpenSearch"]
+        GAMES_INDEX["games_search_index"]
+    end
+
+    USERS --> USER_PROFILES
+    USERS --> USER_WALLET
+    USER_WALLET --> WALLET_TRANSACTIONS
+    GAMES --> GAME_MEDIA_META
+    GAMES --> ACHIEVEMENTS
+
+    GAMES --> USER_LIBRARY
+    GAMES --> REVIEWS_GAME
+    GAMES --> CLOUD_SAVES_META
+    ACHIEVEMENTS --> USER_ACHIEVEMENTS
+
+    GAME_MEDIA_META --> GAME_MEDIA_FILES
+    CLOUD_SAVES_META --> CLOUD_SAVE_FILES
+    GAMES --> GAMES_INDEX
+
+---
+
+### 6.3 Выбор СУБД, индексы, денормализация, шардинг и резервирование
+| Логическая таблица    | Физическое представление                                        | СУБД             | Индексы                                                                                             | Шардинг / партиционирование                         | Резервирование               |
+| --------------------- | --------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------- |
+| users               | users                                                         | PostgreSQL       | PK(id), UNIQUE(email), INDEX(last_login), INDEX(region)                                     | без шардинга, чтение с read replica                 | 1 primary + 2 replicas       |
+| user_profiles       | user_profiles                                                 | PostgreSQL       | PK(id), UNIQUE(user_id), INDEX(user_id)                                                       | без шардинга                                        | 1 primary + 2 replicas       |
+| sessions            | session:{token}, user_sessions:{user_id}                    | Redis Cluster    | key-based access по токену и user_id                                                                | native Redis sharding по hash slot                  | 3 masters + 3 replicas       |
+| user_wallet         | user_wallet                                                   | PostgreSQL       | PK(id), UNIQUE(user_id)                                                                         | без шардинга                                        | 1 primary + 2 replicas       |
+| wallet_transactions | wallet_transactions_YYYY_MM                                   | PostgreSQL       | PK(id), INDEX(user_wallet_id, created_at DESC), INDEX(status, created_at)                     | range partition по created_at помесячно           | 1 primary + 2 replicas       |
+| games               | games                                                         | PostgreSQL       | PK(id), INDEX(release_date), INDEX(price_cents)                                               | без шардинга                                        | 1 primary + 2 replicas       |
+| game_media          | game_media_meta + файлы в bucket: game-media                | PostgreSQL + S3  | PK(id), INDEX(game_id, media_type)                                                              | без шардинга, файлы по префиксу game_id/          | PG replicas + S3 replication |
+| user_library        | user_library_by_user                                          | ScyllaDB         | PRIMARY KEY ((user_id), game_id)                                                                  | распределение по partition key user_id            | RF=3                         |
+| reviews             | reviews_by_game, reviews_by_user                            | ScyllaDB         | PRIMARY KEY ((game_id), created_at, review_id) и PRIMARY KEY ((user_id), created_at, review_id) | partition key game_id и отдельно user_id        | RF=3                         |
+| friends             | friends_by_user                                               | ScyllaDB         | PRIMARY KEY ((user_id), friend_id)                                                                | partition key user_id                             | RF=3                         |
+| notifications       | notifications_by_user + unread counter в Redis                | ScyllaDB + Redis | PRIMARY KEY ((user_id), created_at, notification_id)                                              | partition key user_id, TTL по старым уведомлениям | RF=3 + Redis replica         |
+| cloud_saves         | cloud_saves_meta_by_user_game + файлы в bucket: cloud-saves | ScyllaDB + S3    | PRIMARY KEY ((user_id, game_id), version)                                                         | partition key (user_id, game_id)                  | RF=3 + S3 replication        |
+| achievements        | achievements                                                  | PostgreSQL       | PK(id), INDEX(game_id)                                                                          | без шардинга                                        | 1 primary + 2 replicas       |
+| user_achievements   | user_achievements_by_user                                     | ScyllaDB         | PRIMARY KEY ((user_id), game_id, achievement_id)                                                  | partition key user_id                             | RF=3                         |
+
+---
+
+### 6.4 Денормализация физической схемы
+
+Для уменьшения числа тяжелых join-запросов и повышения скорости чтения используются денормализованные представления.
+
+#### 1. Отзывы
+
+Логическая таблица REVIEWS разбивается на две физические таблицы:
+
+* reviews_by_game для чтения отзывов на странице игры;
+* reviews_by_user для отображения отзывов конкретного пользователя.
+
+При создании или обновлении отзыва запись пишется сразу в обе таблицы. Это устраняет дорогостоящие выборки по двум разным ключам.
+
+#### 2. Друзья
+
+Таблица FRIENDS хранится как friends_by_user.
+Связь дублируется в обе стороны:
+
+* (user_id -> friend_id)
+* (friend_id -> user_id)
+
+Это позволяет мгновенно получать список друзей пользователя без обратных join-операций.
+
+#### 3. Уведомления
+
+Уведомления хранятся в notifications_by_user, а количество непрочитанных дополнительно дублируется в Redis-ключ:
+
+* notifications_unread:{user_id}
+
+Это позволяет быстро отдавать счетчик уведомлений без чтения большого раздела ScyllaDB.
+
+#### 4. Облачные сохранения
+
+Физически CLOUD_SAVES разделяется на:
+
+* cloud_saves_meta_by_user_game для метаданных;
+* объект в bucket: cloud-saves для бинарного содержимого.
+
+Таким образом БД не нагружается хранением больших файлов, а отвечает только за метаданные, контрольные суммы и версии.
+
+#### 5. Каталог игр
+
+По таблице games строится отдельный денормализованный индекс games_search_index в OpenSearch.
+В индекс попадают:
+
+* название игры;
+* разработчик;
+* издатель;
+* теги;
+* жанры;
+* цена;
+* агрегаты по отзывам.
+
+Пользовательский поиск идет в OpenSearch, а PostgreSQL остается источником истины.
+
+---
+
+### 6.5 Детализация физической реализации по таблицам
+
+#### users
+
+Типы полей:
+
+* id — bigint или uuid
+* email — varchar(255)
+* password_hash — varchar(255)
+* created_at, updated_at, last_login — timestamptz
+* region — varchar(16)
+* preferences_json — jsonb
+
+Особенности:
+
+* таблица хранится в PostgreSQL;
+* email индексируется уникально;
+* preferences_json не выносится в отдельные таблицы, так как не участвует в частых фильтрах;
+* чтение пользовательского профиля возможно с реплик, запись только в primary.
+
+#### user_profiles
+
+Типы полей:
+
+* id, user_id — bigint или uuid
+* avatar_url — text
+* display_name — varchar(64)
+* bio — text
+* privacy_settings_json — jsonb
+
+Особенности:
+
+* физическая уникальность по display_name не создается;
+* профиль читается в связке с users, но хранится отдельно для уменьшения ширины основной таблицы пользователя.
+
+#### sessions
+
+Физически вместо SQL-таблицы используются структуры Redis:
+
+* session:{token} -> hash:
+
+  * user_id
+  * device_info
+  * ip_address
+  * created_at
+  * expires_at
+* user_sessions:{user_id} -> set токенов
+
+Особенности:
+
+* TTL устанавливается по expires_at;
+* массовое удаление сессий пользователя выполняется по user_sessions:{user_id};
+* при перезапуске кластера используется AOF.
+
+#### wallet_transactions
+
+Физически таблица партиционируется по месяцам:
+
+* wallet_transactions_2026_01
+* wallet_transactions_2026_02
+* и так далее.
+
+Это нужно по двум причинам:
+
+* таблица накапливается во времени;
+* типичный запрос почти всегда ограничен временным интервалом.
+
+#### games
+
+Типы полей:
+
+* genres_json, tags_json, system_requirements_json хранятся как jsonb.
+
+Особенности:
+
+* PostgreSQL остается источником истины;
+* пользовательский поиск не идет напрямую по JSONB, а выполняется через OpenSearch;
+* обновления каталога проталкиваются в индекс асинхронно через event bus.
+
+#### game_media
+
+Метаданные:
+* id, game_id, media_type, media_url, resolution, file_size_bytes, created_at
+
+Файлы:
+
+* хранятся в bucket: game-media/{game_id}/{media_id}
+
+Особенности:
+
+* media_url содержит ссылку на object storage или CDN;
+* сами изображения и трейлеры не хранятся в PostgreSQL.
+
+#### user_library
+
+Физическая таблица в ScyllaDB:
+
+PRIMARY KEY ((user_id), game_id)
+
+Колонки:
+
+* owned_bool
+* installed_bool
+* cloud_save_enabled
+* playtime_minutes
+* last_played
+* created_at
+* updated_at
+
+Особенности:
+
+* основной запрос это “показать библиотеку пользователя”;
+* выбран partition key user_id, потому что библиотека читается целиком по пользователю;
+* наличие game_id в clustering key позволяет быстро проверить владение конкретной игрой.
+
+#### reviews
+
+Физические таблицы:
+
+1. reviews_by_game
+
+   * PRIMARY KEY ((game_id), created_at, review_id)
+
+2. reviews_by_user
+
+   * PRIMARY KEY ((user_id), created_at, review_id)
+
+Особенности:
+
+* обе таблицы заполняются синхронно из одного события;
+* сортировка по created_at DESC позволяет быстро отдавать последние отзывы;
+* отдельные агрегаты helpful_count, rating_avg, reviews_count можно хранить в кешируемой таблице или Redis.
+
+#### friends
+
+Физическая таблица:
+
+PRIMARY KEY ((user_id), friend_id)
+
+Колонки:
+
+* status
+* since_date
+* created_at
+
+Особенности:
+
+* связи записываются в обе стороны;
+* запрос “список друзей пользователя” читается одной операцией по partition key.
+
+#### notifications
+
+Физическая таблица:
+
+PRIMARY KEY ((user_id), created_at, notification_id)
+
+Колонки:
+
+* notification_text
+* type
+* status
+* read_bool
+* created_at
+* updated_at
+
+Особенности:
+
+* старые уведомления удаляются по TTL, например через 90 дней;
+* счетчик непрочитанных хранится отдельно в Redis;
+* горячая выборка выполняется по пользователю и временному диапазону.
+
+#### cloud_saves
+
+Физические сущности:
+
+1. cloud_saves_meta_by_user_game
+
+   * PRIMARY KEY ((user_id, game_id), version)
+
+2. объект в bucket: cloud-saves/{user_id}/{game_id}/{version}
+
+Колонки метаданных:
+
+* file_path
+* file_size_bytes
+* checksum
+* version
+* created_at
+* updated_at
+
+Особенности:
+
+* бинарный blob не хранится в БД;
+* checksum используется для проверки целостности;
+* новые версии добавляются append-only.
+
+#### achievements
+
+Таблица остается в PostgreSQL, так как данные сравнительно компактны и редко изменяются.
+
+Индекс:
+
+* INDEX(game_id)
+
+#### user_achievements
+
+Физическая таблица в ScyllaDB:
+
+PRIMARY KEY ((user_id), game_id, achievement_id)
+
+Колонки:
+
+* unlocked_bool
+* unlocked_at
+* progress_percent
+* created_at
+* updated_at
+
+Особенности:
+
+* выборка идет по пользователю и игре;
+* game_id дублируется физически, чтобы не делать лишние join с таблицей achievements.
+
+---
+
+### 6.6 Балансировка запросов и мультиплексирование подключений
+
+| Хранилище     | Балансировка запросов                                  | Мультиплексирование подключений        |
+| ------------- | ------------------------------------------------------ | -------------------------------------- |
+| PostgreSQL    | HAProxy/Patroni, разделение primary/replica reads      | PgBouncer в режиме transaction pooling |
+| ScyllaDB      | token-aware и shard-aware routing на клиенте           | нативный пул соединений драйвера       |
+| Redis Cluster | cluster-aware routing по hash slot                     | встроенный connection pool клиента     |
+| S3 / MinIO    | через CDN и S3 API endpoint                            | HTTP keep-alive и multipart upload     |
+| OpenSearch    | round-robin по data nodes или через coordinating nodes | connection pool HTTP-клиента           |
+
+---
+
+### 6.7 Клиентские библиотеки и интеграции
+
+Если backend реализуется на Go, используются следующие библиотеки:
+
+| Хранилище  | Библиотека / интеграция               |
+| ---------- | ------------------------------------- |
+| PostgreSQL | pgx + PgBouncer                   |
+| ScyllaDB   | gocql или Scylla shard-aware driver |
+| Redis      | go-redis                            |
+| S3 / MinIO | minio-go или AWS SDK S3             |
+| OpenSearch | opensearch-go                       |
+Если backend реализуется на Python, аналогичный набор:
+
+| Хранилище  | Библиотека / интеграция |
+| ---------- | ----------------------- |
+| PostgreSQL | asyncpg / psycopg   |
+| ScyllaDB   | cassandra-driver      |
+| Redis      | redis-py              |
+| S3 / MinIO | boto3 / minio       |
+| OpenSearch | opensearch-py         |
+
+---
+
+### 6.8 Схема резервного копирования
+
+| Хранилище  | Схема бэкапа                                                                    |
+| ---------- | ------------------------------------------------------------------------------- |
+| PostgreSQL | ежедневный full backup + непрерывная архивация WAL, PITR 30 дней                |
+| ScyllaDB   | ежедневные snapshots + выгрузка в object storage                                |
+| Redis      | AOF everysec + репликация мастеров                                            |
+| S3 / MinIO | versioning + cross-region replication                                           |
+| OpenSearch | snapshots в S3, индекс при необходимости пересобирается из PostgreSQL и событий |
+
+---
+
+### 6.9 Итоговое распределение таблиц по хранилищам
+
+| Хранилище     | Таблицы / сущности                                                                                                                                                     |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL    | users, user_profiles, user_wallet, wallet_transactions, games, game_media_meta, achievements                                                             |
+| ScyllaDB      | user_library_by_user, reviews_by_game, reviews_by_user, friends_by_user, notifications_by_user, cloud_saves_meta_by_user_game, user_achievements_by_user |
+| Redis Cluster | session:{token}, user_sessions:{user_id}, notifications_unread:{user_id}, hot cache                                                                              |
+| S3 / MinIO    | game-media, cloud-saves                                                                                                                                            |
+| OpenSearch    | games_search_index                                                                                                                                                   |
+
+---
+
 
 ## Источники данных
 - https://steamdb.info/app/753/charts
