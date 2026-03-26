@@ -255,7 +255,7 @@ __RPS_пиковое = RPS_среднее * 2 = 2076__
 | **ИТОГО** | — | **~8 600** | **~142 000–183 000** | — | Суммарная нагрузка на API-шлюз |
 
 
-## 4 Логическая БД
+## 5 Логическая БД
 ```mermaid
 erDiagram
     USERS {
@@ -459,6 +459,51 @@ erDiagram
 |cloud_saves|16(id) + 16(user_id) + 16(game_id) + 500×2(file_path) + 8(file_size_bytes) + 64×2(checksum) + 4(version) + 8(created_at) + 8(updated_at) = 1 204 байта × 276 млн / 1024³ = **~310 ГБ**|
 |achievements|16(id) + 16(game_id) + 100×2(achievement_name) + 300×2(description) + 500×2(icon_url) + 4(points) + 8(created_at) = 1 844 байта × 5 млн / 1024³ = **~8.6 ГБ**|
 |user_achievements|16(id) + 16(user_id) + 16(achievement_id) + 1(unlocked_bool) + 8(unlocked_at) + 4(progress_percent) + 8(created_at) + 8(updated_at) = 77 байт × 345 млн/мес / 1024³ = **~25 ГБ/мес**|
+
+## 6. Физическая схема БД
+
+### 6.1 Выбор СУБД по таблицам
+
+| Логическая сущность                            | Физическое хранилище         | Причина                                                             |
+| ---------------------------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| users, orders, payments, game_prices   | PostgreSQL                   | сильная консистентность, транзакции                                 |
+| sessions                                     | Redis Cluster                | TTL, низкая задержка                                                |
+| library_items                                | ScyllaDB                     | огромный объем, чтение по user_id, горизонтальное масштабирование |
+| reviews                                      | ScyllaDB                     | write-heavy, hot partitions по game_id                            |
+| cloud_save_meta                              | ScyllaDB                     | быстрый доступ по (user_id, game_id)                              |
+| cloud_save_blob, game_builds, game_media | S3-compatible Object Storage | дешево и масштабируемо для blob-данных                              |
+| search_index                                 | OpenSearch                   | полнотекстовый поиск, фильтры, фасеты                               |
+| event_log                                    | Kafka                        | асинхронная шина событий                                            |
+| аналитика                                      | ClickHouse                   | дешевые агрегации по огромному event stream                         |
+
+### 6.2 Индексы, шардинг, резервирование
+
+| Сущность          | Ключ/индексы                                   | Шардирование            | Резервирование       |
+| ----------------- | ---------------------------------------------- | ----------------------- | -------------------- |
+| users           | PK user_id, UNIQUE email                   | hash by user_id       | primary + 2 replicas |
+| orders          | PK order_id, IDX (user_id, created_at)     | hash by user_id       | primary + 2 replicas |
+| payments        | PK payment_id, UNIQUE provider_txn_id      | hash by order_id      | primary + 2 replicas |
+| library_items   | PK ((user_id), game_id)                      | by user_id            | RF=3                 |
+| reviews         | PK ((game_id), created_at, review_id)        | by game_id            | RF=3                 |
+| cloud_save_meta | PK ((user_id, game_id), version_ts)          | by (user_id, game_id) | RF=3                 |
+| search_index    | doc id game_id, inverted index on title/tags | 24 shards               | 1 replica            |
+| object storage    | object key                                     | bucket by region/game   | EC 8+4               |
+
+### 6.3 Бэкапы и доступ
+
+* PostgreSQL: daily full + WAL archiving + PITR 30 days.
+* ScyllaDB: incremental snapshots + restore drills.
+* Object storage: versioning + cross-region replication for critical buckets.
+* Redis: AOF + replica.
+* Kafka: replication factor 3.
+
+Балансировка подключений:
+
+* PostgreSQL через PgBouncer;
+* Redis через cluster-aware client;
+* Scylla/OpenSearch через native driver и token-aware routing.
+
+---
 
 ## Источники данных
 - https://steamdb.info/app/753/charts
