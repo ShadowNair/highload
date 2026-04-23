@@ -81,7 +81,7 @@ pie title ⚧ Гендерный состав аудитории
 * Steam указывает, что платформа имеет более 132 млн MAU. В открытых агрегированных оценках для 2025 года также используются 69 млн DAU и отношение DAU/MAU = 52,27%. Выручка Steam за 2024 год оценивается в 10,8 млрд долларов, при этом 61% выручки приходится на продажи игр. Средняя цена игр в топ-50 Steam по количеству проданных копий к октябрю 2025 года составляет 21,41 доллара. [1](https://partner.steamgames.com/?redir=country.php%3FcountryCode%3DCN%26dateStart%3D2024-08-16%26dateEnd%3D2024-08-22&utm_source=chatgpt.com)
 * Для расчета воронки магазина используются следующие ecommerce-метрики. Средний conversion rate в сегменте Toys, Games & Collectables в феврале 2026 года составляет 1,86%. Средний глобальный add-to-cart rate составляет 6,07%. Средний documented cart abandonment rate равен 70,22%. Среднее число страниц за ecommerce-сессию составляет 2,6. Для оценки сезонного пика store-нагрузки используется рост add-to-cart rate с 5,85% в июле 2025 года до 7,46% в ноябре 2024 года, что дает дополнительный коэффициент 1,275. [2](https://www.irpcommerce.com/en/us/ecommercemarketdata.aspx?Market=19)
 * Для оценки пользовательского поведения используются внешние агрегированные данные по Steam: 5,2 логина в неделю на пользователя, 1,4 часа на сессию и 1,8 запущенной игры на один DAU. Кроме того, Steam сообщает, что пик активности приходится на окно 19:00-23:00, то есть на 4 часа в сутки.[3](https://sqmagazine.co.uk/steam-statistics/)
-* Для cloud save используется доля игр с поддержкой Steam Cloud. По данным SteamDB, в каталоге сейчас 67 225 игр с признаком Steam Cloud. Открытые оценки общего числа игр на платформе дают 125 494 тайтла, значит доля cloud-enabled игр составляет 53,6%. В проектной модели принимается 2 cloud sync-операции на игровую сессию: чтение при запуске и запись при завершении. Сам Steam Cloud официально описан как механизм хранения и синхронизации пользовательских файлов на серверах Steam.[4](https://steamdb.info/instantsearch/)
+* Для cloud save используется доля игр с поддержкой Steam Cloud. По данным SteamDB, в каталоге сейчас 67 225 игр с признаком Steam Cloud. Открытые оценки общего числа игр на платформе дают 128 950 тайтла, значит доля cloud-enabled игр составляет 53,6%. В проектной модели принимается 2 cloud sync-операции на игровую сессию: чтение при запуске и запись при завершении. Сам Steam Cloud официально описан как механизм хранения и синхронизации пользовательских файлов на серверах Steam.[4](https://steamdb.info/instantsearch/)
 * Для уведомлений используется официальная статистика Steam Events. Valve указала, что за 2025 год разработчики опубликовали 436 592 Steam Events, которые суммарно дали 3,13 млрд player views. Это подходит как нижняя оценка нагрузки на чтение продуктовых уведомлений и событийной ленты.[5](https://steamcommunity.com/groups/steamworks/announcements/detail/528746884222682053)
 
 Принятые обозначения:
@@ -167,7 +167,7 @@ Reviews = 843032/ 40 = 21076
 | Поиск   |      68 375 309 |         791 |       6 331 |
 | Страница игр        |      46 637 007 |         540 |       4 318 |
 | Библиотека          |      124 200 000 |         1 438 |       8 625 |
-| Авторизация и регистрация      |      51 257 143 |         593 |       3 560 |
+| Авторизация     |      51 257 143 |         593 |       3 560 |
 | Корзина |       2 830 866 |          33 |         262 |
 | Платежи |         843 032 |          10 |          78 |
 | Отзывы         |          21 076 |        0.24 |         2 |
@@ -215,7 +215,7 @@ Traffic_search(peek) = 6331⋅14276⋅8/1024^3 = 0.673 Gbps
 |Reviews|	0.000008 Gbps|	0.000047 Gbps|
 |Уведомления|	0.0079 Gbps|	0.0476 Gbps|
 |Cloud save|	59.91 Gbps|	359.44 Gbps|
-|Storefront/API без cloud save|	21.91 Gbps|	174.05 Gbps|
+|Storefront/API без cloud save|	0.527 Gbps|	3.395 Gbps|
 |Storefront/API с cloud save|	81.81 Gbps|	533.49 Gbps|
 |Скачивание игр и обновлений|	25.37 Tbps|	48.8 Tbps|
 
@@ -283,9 +283,9 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 * Frankfurt - основной европейский регион. Франкфурт является одним из крупнейших интернет-хабов мира: DE-CIX Frankfurt называет себя ведущим в мире, с пиковым трафиком 18+ Tbps и доступом к 1000+ сетям. Это логичный выбор для европейского storefront/API и части origin-трафика.[8](https://www.de-cix.net/en/locations/frankfurt?utm_source=chatgpt.com)
 * Warsaw - резервный европейский регион и точка покрытия Восточной Европы и части трафика Russia/CIS. Equinix называет Варшаву major interconnection gateway to eastern Europe, а локальные IX в Польше дают хороший задел под regional edge и резерв storefront/API.[9](https://www.equinix.com/data-centers/europe-colocation/poland-colocation/warsaw-data-centers?utm_source=chatgpt.com)
 #### Азия
-* Singapore - основной APAC-регион. SGIX работает как распределенная peering-сеть в крупных дата-центрах в Сингапуре и позиционируется как один из крупнейших открытых и нейтральных интернет-обменников Азии. Для глобального игрового сервиса это удобная точка для Северо-Восточной Азии и части островных государств.[10](https://www.sgix.sg/about-us-2/?utm_source=chatgpt.com)
-* Mumbai - второй азиатский регион. DE-CIX India указывает, что в Мумбаи подключено 407 сетей, а сам узел уже проходил отметку 1 Tbps пропускная способность и продолжал наращивать емкость. Это делает Мумбаи хорошей точкой для Северной Азии и части ближневосточного трафика.[11](https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/?utm_source=chatgpt.com)
-* Tokyo - Токио как отдельный высокосвязный хаб для Японии и части восточноазиатского трафика.
+* Singapore - основной APAC-регион. SGIX работает как распределенная peering-сеть в крупных дата-центрах в Сингапуре и позиционируется как один из крупнейших открытых и нейтральных интернет-обменников Азии. Для глобального игрового сервиса это удобная точка для Юго-Восточной Азии и части островных государств.[10](https://www.sgix.sg/about-us-2/?utm_source=chatgpt.com)
+* Mumbai - второй азиатский регион. DE-CIX India указывает, что в Мумбаи подключено 407 сетей, а сам узел уже проходил отметку 1 Tbps пропускная способность и продолжал наращивать емкость. Это делает Мумбаи хорошей точкой для Южной Азии и части ближневосточного трафика.[11](https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/?utm_source=chatgpt.com)
+* Tokyo - то первый коммерческий IX Японии, один из крупнейших по числу клиентов и важная часть интернет-инфраструктуры Японии.[12](https://www.jpix.ad.jp/en/?utm_source=chatgpt.com)
 #### Южная Америка
 * São Paulo - основной южноамериканский регион. IX.br и NIC.br прямо указывают, что São Paulo является глобальным лидером по объему трафика обмена и в 2026 году достигал 32 Tbps на локальном PTT. Для континента это очевидная точка размещения core edge/download-инфраструктуры.[12](https://nic.br/noticia/releases/ix-br-hits-record-50-tbit-s-of-aggregated-internet-traffic-driven-by-content-and-digital-services/?utm_source=chatgpt.com)
 
@@ -322,9 +322,197 @@ GeoDNS + anycast edge используется для cdn, потому что �
 * Singapore → резерв: Tokyo → 2-й резерв: Mumbai
 * Tokyo → резерв: Singapore → 2-й резерв: Mumbai
 * Mumbai → резерв: Singapore → 2-й резерв: Tokyo
+* São Paulo → резерв: Ashburn → 2-й резерв: Dallas
 
 ![Дата-центры](img/konturnaya-karta-mira.jpg)
-## 5 Логическая БД
+
+## 4. Локальная балансировка
+### 4.1 Общий принцип локальной балансировки
+
+Для storefront/API-контура используется L7-балансировка, так как она позволяет:
+
+* маршрутизировать трафик по Host и Path;
+* выделять отдельные backend-пулы под разные классы запросов;
+* использовать TLS termination;
+* включать кэширование для read-only ручек;
+* применять rate limiting, circuit breaking и health checks;
+* выполнять graceful draining при обновлении инстансов.
+
+Для download/CDN-контура используется отдельный ingress-слой с упором на:
+
+* высокую пропускную способность;
+* cache locality;
+* origin shield;
+* раздельную обработку small metadata requests и large binary downloads.
+
+### 4.2 Балансировка storefront/API-контура
+
+Для доменов steam.example.com, api.steam.example.com и cloud.steam.example.com в каждом регионе используется кластер NGINX / Envoy на L7-уровне.
+
+Прокси-слой выполняет следующие функции:
+
+* TLS termination — разгружает backend-сервисы от криптографических операций;
+* маршрутизацию по доменам и путям;
+* балансировку между application-server инстансами;
+* кэширование популярных ответов каталога и карточек игр;
+* сжатие ответов;
+* ограничение частоты запросов;
+* health checks и исключение деградировавших инстансов;
+* connection reuse / keep-alive между proxy и backend.
+
+NGINX официально поддерживает upstream load balancing, параметры backup, down, а также keepalive для повторного использования idle-соединений к backend-серверам. Это позволяет снижать накладные расходы на установку соединений и уменьшать нагрузку на application-пул. [13](nginx.org)
+
+В качестве основного алгоритма балансировки storefront/API предлагается использовать least request. Envoy в официальной документации указывает, что weighted least request учитывает число активных запросов на инстансе и уменьшает вероятность неравномерной перегрузки отдельных узлов. Для контуров с неоднородной задержкой, таких как product page, library и search, это лучше, чем обычный round robin. [14](envoyproxy.io)
+
+### 4.3 Функциональное деление backend-пулов
+
+Локальная балансировка должна учитывать не только число инстансов, но и профиль нагрузки. Поэтому внутри региона backend делится на отдельные функциональные пулы:
+
+* storefront pool — каталог, product page, рекомендации;
+* auth/profile pool — логин, сессии, профиль пользователя;
+* library/cloud-metadata pool — библиотека, достижения, cloud metadata;
+* payment/checkout pool — корзина, оплата, транзакции, entitlements;
+* download/origin pool — манифесты, metadata для patch/download, работа с origin storage.
+
+Такое разделение дает два преимущества:
+
+* нагрузка на карточки игр и поиск не влияет на платежный контур;
+* massive download traffic не вытесняет storefront/API-запросы с тех же ingress/backend-ресурсов.
+### 4.4 Алгоритмы балансировки по типам запросов
+
+Внутри региона предлагается использовать разные алгоритмы балансировки для разных пулов.
+
+|Контур|	Алгоритм|	Причина выбора|
+|:--:|:--:|:--:|
+|storefront/search/product|	least request|	запросы имеют разную стоимость и задержку, поэтому нужен учет текущей загрузки backend-инстансов|
+|auth/profile|	least request|позволяет равномернее распределять burst-нагрузку логинов|
+|library/cloud metadata|	least request|	уменьшает вероятность перегрузки отдельных нод при вечернем пике|
+|payment/checkout|	least request + приоритетность пула|	платежный контур должен быть изолирован от всплесков read-трафика|
+|download/origin| metadata	consistent hash / cache-aware routing|	важно сохранять cache locality и уменьшать лишние запросы к origin|
+
+### 4.5 Локальная балансировка download/CDN-контура
+
+Для cdn.steam.example.com используется отдельный ingress-контур. Его нельзя обслуживать теми же правилами, что storefront/API, потому что у него другой профиль трафика:
+
+* очень большие объекты;
+* длинные сессии передачи данных;
+* критичная зависимость от cache-hit ratio;
+* необходимость разгрузки origin-хранилища.
+
+Внутри региона download-контур строится по схеме:
+
+* edge ingress → regional cache → origin shield → object storage / build storage
+
+Локальная балансировка в этом контуре должна обеспечивать:
+
+* раздельную обработку small metadata requests и large binary downloads;
+* сохранение cache locality;
+* минимизацию обращений к origin;
+* возможность быстрого исключения деградировавших cache/origin-инстансов;
+* поддержку keep-alive и reuse соединений к upstream. [12](nginx.org)
+
+Для ingress download-контура разумно использовать:
+
+* consistent hashing или cache-aware routing между cache-узлами;
+* origin shield как промежуточный уровень между edge и S3/object storage;
+* отдельные backend-пулы под:
+манифесты и metadata,
+small assets,
+large depot/chunk downloads.
+
+Это необходимо, чтобы запросы к metadata и выдача крупных бинарных объектов не конкурировали за одни и те же ресурсы.
+
+### 4.6 Кэширование
+
+Кэширование в локальной балансировке применяется неравномерно.
+
+Кэшируются:
+
+* страницы каталога;
+* карточки игр;
+* результаты поиска и листинга;
+* медиаметаданные;
+* community/event pages;
+* агрегаты отзывов;
+* часть notification bundles.
+
+Не кэшируются или кэшируются ограниченно:
+
+* логин;
+* checkout;
+* payment;
+* операции выдачи entitlements;
+* запись отзывов;
+* запись cloud save metadata;
+* операции изменения библиотеки.
+
+Это позволяет уменьшить нагрузку на backend и базы данных при распродажах, когда большая часть всплеска приходится на hot read traffic.
+
+### 4.7 SSL termination и reuse соединений
+
+SSL termination выполняется на edge/L7-proxy. Это позволяет:
+
+* снизить CPU-нагрузку на backend;
+* централизованно управлять сертификатами;
+* повторно использовать TLS-сессии;
+* эффективно работать с HTTP/2 и HTTP/3;
+* уменьшить количество полных handshake-операций.
+
+Между прокси и backend используются keep-alive соединения. NGINX официально поддерживает keepalive connections к upstream-серверам, а в новых версиях эта функциональность включена по умолчанию. Для Steam-подобной системы с большим числом коротких read-запросов это уменьшает сетевой overhead и сокращает задержку на повторные обращения. [12](nginx.org)
+
+### 4.8 API Gateway
+
+Для изоляции внутренней логики и межсервисной маршрутизации используется API Gateway / Backend for Frontend.
+
+Его задачи:
+
+* единая точка входа для desktop/web clients;
+* маршрутизация по backend-сервисам;
+* аутентификация и авторизация;
+* rate limiting;
+* сбор технических метрик;
+* приоритизация критичных путей (auth, library, checkout, payment);
+* graceful degradation неключевых функций.
+
+Примеры деградации:
+
+* при перегрузке можно временно упростить recommendations;
+* отключить часть community widgets;
+* отдавать stale-cache для product page;
+* но сохранить рабочими auth, library, checkout и payment.
+### 4.9 Отказоустойчивость внутри региона
+
+Локальная балансировка строится по схеме N+1 с размещением инстансов в нескольких зонах отказа внутри региона. Используются:
+
+* active-active ingress proxies;
+* health checks;
+* automatic drain деградировавших инстансов;
+* connection draining перед удалением ноды;
+* rolling update без прерывания активных запросов;
+* retry только для idempotent read-path;
+* circuit breakers на внешних зависимостях.
+
+Для storefront/API предпочтительно использовать комбинацию:
+
+* active health checks;
+* passive health checks / outlier detection;
+* резервную емкость не менее N+1 для critical pools (auth, checkout, payment, library).
+### 4.10 Вывод
+
+Для аналога Steam локальная балансировка должна быть построена не как единый прокси-контур “для всего”, а как система из нескольких специализированных слоев:
+
+* storefront/API ingress;
+* auth/payment ingress;
+* download/origin ingress.
+
+Такой подход позволяет:
+
+* изолировать платежный контур от всплесков поиска и карточек игр;
+* не смешивать massive binary delivery с JSON/API;
+* эффективнее использовать кэширование и keep-alive;
+* упростить деградацию второстепенных функций без потери критичных операций.
+
+## 5. Логическая БД
 ```mermaid
 erDiagram
     USERS {
@@ -512,23 +700,31 @@ erDiagram
 |user_achievement|Таблица прогресса достижений пользователя: флаг разблокировки, дата разблокировки, процент прогресса. Связь многие-ко-многим USERS-ACHIEVEMENTS|
 
 ### Размеры данных и нагрузки на чтение/запись
+#### Постоянные таблицы
 |Таблица|Расчет|
 |:--:|:--:|
 |users|16(id) + 255×2(email) + 60×2(password_hash) + 8(created_at) + 8(updated_at) + 8(last_login) + 10×2(region) + 500(preferences_json) = 1 190 байт × 132 млн / 1024³ = **~146 ГБ**|
 |user_profiles|16(id) + 16(user_id) + 255×2(avatar_url) + 50×2(display_name) + 500×2(bio) + 300(privacy_settings_json) + 8(created_at) + 8(updated_at) = 1 958 байт × 132 млн / 1024³ = **~240 ГБ**|
-|sessions|16(id) + 256×2(session_token) + 16(user_id) + 200×2(device_info) + 45×2(ip_address) + 8(created_at) + 8(expires_at) = 1 050 байт × 138 млн / 1024³ = **~134 ГБ**|
 |user_wallet|16(id) + 16(user_id) + 8(balance_cents) + 3×2(currency) + 8(created_at) + 8(updated_at) = 62 байта × 132 млн / 1024³ = **~7.6 ГБ**|
-|wallet_transactions|16(id) + 16(user_wallet_id) + 8(amount_cents) + 20×2(transaction_type) + 30×2(payment_method) + 15×2(status) + 8(created_at) = 178 байт × 3.5 млн/мес / 1024³ = **~0.58 ГБ/мес**|
-|games|16(id) + 200×2(title) + 100×2(developer) + 100×2(publisher) + 8(release_date) + 8(price_cents) + 200(genres_json) + 300(tags_json) + 500(system_requirements_json) + 8(created_at) + 8(updated_at) = 1 848 байт × 100 000 / 1024³ = **~0.17 ГБ**|
-|game_media|16(id) + 16(game_id) + 20×2(media_type) + 500×2(media_url) + 20×2(resolution) + 8(file_size_bytes) + 8(created_at) = 1 128 байт × 500 000 / 1024³ = **~0.52 ГБ**|
+|games|16(id) + 200×2(title) + 100×2(developer) + 100×2(publisher) + 8(release_date) + 8(price_cents) + 200(genres_json) + 300(tags_json) + 500(system_requirements_json) + 8(created_at) + 8(updated_at) = 1 848 байт × 129 409 / 1024³ = **~0.22 ГБ**|
+|game_media|16(id) + 16(game_id) + 20×2(media_type) + 500×2(media_url) + 20×2(resolution) + 8(file_size_bytes) + 8(created_at) = 1 128 байт × 776 454 / 1024³ = **~0.82 ГБ**|
 |user_library|16(id) + 16(user_id) + 16(game_id) + 1(owned_bool) + 1(installed_bool) + 1(cloud_save_enabled) + 8(playtime_minutes) + 8(last_played) + 8(created_at) + 8(updated_at) = 83 байта × 528 млн / 1024³ = **~41 ГБ**|
-|reviews|16(id) + 16(user_id) + 16(game_id) + 4(rating) + 100×2(title) + 2000×2(body) + 8(helpful_count) + 8(created_at) + 8(updated_at) = 4 276 байт × 13.2 млн/мес / 1024³ = **~52 ГБ/мес**|
 |friends|16(id) + 16(user_id) + 16(friend_id) + 15×2(status) + 8(since_date) + 8(created_at) = 94 байта × 1.65 млрд / 1024³ = **~144 ГБ**|
-|notifications|16(id) + 16(user_id) + 500×2(notification_text) + 30×2(type) + 15×2(status) + 1(read_bool) + 8(created_at) + 8(updated_at) = 1 139 байт × 10.35 млрд/мес / 1024³ = **~11 ТБ/мес**|
-|cloud_saves|16(id) + 16(user_id) + 16(game_id) + 500×2(file_path) + 8(file_size_bytes) + 64×2(checksum) + 4(version) + 8(created_at) + 8(updated_at) = 1 204 байта × 276 млн / 1024³ = **~310 ГБ**|
-|achievements|16(id) + 16(game_id) + 100×2(achievement_name) + 300×2(description) + 500×2(icon_url) + 4(points) + 8(created_at) = 1 844 байта × 5 млн / 1024³ = **~8.6 ГБ**|
-|user_achievements|16(id) + 16(user_id) + 16(achievement_id) + 1(unlocked_bool) + 8(unlocked_at) + 4(progress_percent) + 8(created_at) + 8(updated_at) = 77 байт × 345 млн/мес / 1024³ = **~25 ГБ/мес**|
+|cloud_saves|16(id) + 16(user_id) + 16(game_id) + 500×2(file_path) + 8(file_size_bytes) + 64×2(checksum) + 4(version) + 8(created_at) + 8(updated_at) = 1 204 байта × 660 млн / 1024³ = **~740 ГБ**|
+|achievements|16(id) + 16(game_id) + 100×2(achievement_name) + 300×2(description) + 500×2(icon_url) + 4(points) + 8(created_at) = 1 844 байта × 6 470 450 / 1024³ = **~11.1 ГБ**|
+|user_achievements|16(id) + 16(user_id) + 16(achievement_id) + 1(unlocked_bool) + 8(unlocked_at) + 4(progress_percent) + 8(created_at) + 8(updated_at) = 77 байт × 13.2 млрд / 1024³ = **~947 ГБ**|
 
+#### Оперативные таблицы
+|Таблица|Расчет|
+|:--:|:--:|
+|sessions|16(id) + 256×2(session_token) + 16(user_id) + 200×2(device_info) + 45×2(ip_address) + 8(created_at) + 8(expires_at) = 1050 Б × 69 млн / 1024³ = **~67.5 ГБ**|
+
+#### Растущие таблицы
+|Таблица|Расчет|
+|:--:|:--:|
+|wallet_transactions|178 Б × (843 032 покупок/день × 30) = 178 Б × 25 290 960 / 1024³ = **~4.19 ГБ/мес**|
+|reviews|4276 Б × (21 076 отзывов/день × 30) = 4276 Б × 632 280 / 1024³ = **~2.52 ГБ/мес**|
+|notifications|1139 Б × (8 575 342 уведомлений/день × 30) = 1139 Б × 257 260 260 / 1024³ = **~273 ГБ/мес**|
 ## 6. Физическая схема БД
 
 ### 6.1 Общие принципы физической реализации
@@ -983,6 +1179,58 @@ PRIMARY KEY ((user_id), game_id, achievement_id)
 |Prometheus + Grafana|	Мониторинг и обработка|	метрики и алерты|
 |Jaeger / Tempo|	tracing|	Используются для распределенной трассировки в микросервисной архитектуре. Позволяют понять, как запрос проходит через API Gateway, backend-сервисы, очереди и базы данных, а также находить узкие места и деградации по задержке|
 |Kubernetes|	оркестрация|	Используется для развертывания, масштабирования и обновления сервисов|
+
+## 9. Схема проекта
+
+## 10. Обеспечение надежности
+
+### Общие меры по уровням
+| Уровень  | Меры |
+|:--:|:--:|
+| **Уровень ДЦ**                  | Резервирование электропитания, каналов связи, охлаждения и сетевого оборудования. Размещение сервисов в нескольких зонах отказа. Использование UPS и дизель-генераторов.                    |
+| **Глобальная балансировка**     | Latency-based DNS и GeoDNS для направления трафика в ближайший здоровый регион. Наличие резервного и второго резервного региона для каждого core-DC.                                        |
+| **Локальная балансировка**      | Разделение балансировки storefront/API, payment/auth и download/CDN-контуров. L7-балансировка для API и отдельный ingress/cache-контур для бинарной раздачи.                                |
+| **Уровень сервисов**            | Разделение backend-пулов по профилю нагрузки: storefront, auth, payment, library, community, cloud, download. Резервирование CPU, RAM и сети. Graceful degradation для некритичных функций. |
+| **Уровень БД и хранилищ**       | Репликация, резервное копирование, кворумные операции для критичных данных, разделение OLTP, wide-column, search и object storage контуров.                                                 |
+| **Разработка и инфраструктура** | Code review, unit/integration/e2e testing, CI/CD, статический анализ, rollback, disaster recovery drills, отключение региона в рамках учений.                                               |
+| **Наблюдаемость**               | Централизованное логирование, трассировка, мониторинг, профилирование, алерты, контроль SLI/SLO по storefront, auth, checkout, cloud save и CDN.                                            |
+
+### Уровень БД и хранилищ
+| Хранилище | Меры|
+|:--:|:--:|
+| **PostgreSQL**           | 1 primary + 2 replicas. Ежедневный full backup, WAL archiving, PITR. Запись только в primary, чтение с реплик.                                                            |
+| **ScyllaDB / Cassandra** | Replication factor = 3. Для критичных пользовательских данных используется `LOCAL_QUORUM`. Денормализация и распределение по partition key для уменьшения hot partitions. |
+| **Redis Cluster**        | 3 master + replicas. Хранение sessions, unread counters, hot cache и rate limit state. TTL для короткоживущих данных, persistence для нужных контуров.                    |
+| **S3 / MinIO**           | Versioning, replication, lifecycle policies, checksum validation. Раздельные bucket/prefix policies для `game-media` и `cloud-saves`.                                     |
+| **OpenSearch**           | Репликация шардов, snapshots в object storage, hot/warm topology, rebuild индекса из PostgreSQL и event stream при необходимости.                                         |
+| **Kafka / Redpanda**     | Replication factor = 3. Idempotent producer для критичных топиков. Отдельные retry/DLQ-потоки для побочных задач.  |
+
+### Доролнительные паттерны надежности
+| Паттерн | Мера |
+|:--:|:--:|
+| **Асинхронные паттерны** | Event-driven взаимодействие через Kafka / Redpanda для библиотеки, уведомлений, аналитики, индексации каталога и обновления агрегатов. |
+| **Rate Limiting**        | Ограничение частоты запросов на уровне API Gateway и edge ingress. Отдельные лимиты для поиска, auth, checkout, reviews и cloud save.  |
+| **Retry**                | Retry только для idempotent read-операций и безопасных внутренних вызовов. Используется exponential backoff и retry budget.            |
+| **Circuit Breaker**      | Защита от каскадных отказов между сервисами. При деградации зависимостей сервис отдает fallback или stale-cache.                       |
+| **Bulkhead**             | Разделение пулов ресурсов между storefront, payment, cloud save и download-контурами.                                                  |
+| **Graceful Shutdown**    | Обработка SIGTERM, завершение in-flight запросов, connection draining, остановка приема новых запросов перед SIGKILL.                  |
+| **Graceful Degradation** | При перегрузке отключаются рекомендации, часть community-блоков, расширенные поисковые фильтры и тяжелые вторичные виджеты.            |
+| **Idempotency**          | Для checkout/payment и выдачи прав владения используются идемпотентные ключи.   |
+
+### Контрольные метрики надежности
+
+| Контур | Ключевые метрики |
+|:--:|:--:|
+| **Storefront / Search / Product** | latency, error rate, cache hit ratio                    |
+| **Auth**                          | login success rate, token refresh latency               |
+| **Checkout / Payment**            | success rate, payment latency, idempotency conflicts    |
+| **Library / Cloud Save**          | freshness, sync latency, conflict/error rate            |
+| **CDN / Download**                | throughput, cache hit ratio, origin load, retry rate    |
+| **Data Layer**                    | replication lag, quorum failures, queue lag, saturation |
+
+### Вывод
+Для аналога Steam надежность обеспечивается не только резервированием железа, но и разделением системы на независимые контуры: storefront/API, payment, cloud save и download/CDN. Это позволяет переживать распродажи, релизы и крупные обновления без каскадной деградации всей платформы.
+
 
 
 ## Источники данных
