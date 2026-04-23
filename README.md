@@ -225,23 +225,30 @@ Traffic_search(peek) = 6331⋅14276⋅8/1024^3 = 0.673 Gbps
 
 #### OLTP
 
-Объём аккаунтов:
-S_user = 132000000⋅2KB ≈ 0.246 TiB
-Объём активных сессий:
-S_sessions = 69000000⋅1KB ≈ 0.064 TiB
-Объём заказов и платежных записей за год:
-S_ord/year = 843032⋅365⋅1KB ≈ 0.287 TiB
-Объём отзывов за год:
-S_reviews/year = 21076⋅365⋅2KB ≈ 0.014 TiB
-Годовой прирост записей библиотеки:
-S_lib/year = 843032⋅365⋅128B ≈ 0.036 TiB
-Каталог и поисковые метаданные:
-S_cat = 128950⋅64KB ≈ 0.0077 TiB
-Суммарный объём основного логического OLTP-хранилища:
-S = 0.246+0.064+0.287+0.014+0.036+0.008 = 0.655 TiB
+|Таблица|Оценка числа строк|Размер строки|Объем|
+|:--:|:--:|:--:|:--:|
+|USERS|	132 000 000|	284 Б|	34.91 GiB|
+|USER_PROFILES|	132 000 000|	496 Б|	60.98 GiB|
+|SESSIONS|	69 000 000|	192 Б|	12.34 GiB|
+|USER_WALLET|	132 000 000|	72 Б	8.85 GiB|
+|WALLET_TRANSACTIONS|	1 538 533 400|	96 Б	137.56 GiB|
+|GAMES|	129 409|	1 632 Б|	0.20 GiB|
+|GAME_MEDIA|	776 454|	208 Б|	0.15 GiB|
+|USER_LIBRARY|	1 584 000 000|	83 Б|	122.44 GiB|
+|REVIEWS|	38 463 700|	652 Б|	23.36 GiB|
+|FRIENDS|	1 320 000 000|	80 Б|	98.35 GiB|
+|NOTIFICATIONS|	3 105 000 000|	241 Б|	696.91 GiB|
+|CLOUD_SAVES|	660 000 000|	240 Б|	147.52 GiB|
+|ACHIEVEMENTS|	6 470 450|	508 Б|	3.06 GiB|
+|USER_ACHIEVEMENTS|	13 200 000 000|	77 Б|	946.60 GiB|
+Storage_global = 2.239 TiB
+Добавляем 20% на индексы, денормализацию и т.д.:
+Storage_gl+20 = 2.673TiB
 
-Добавляем 30% на индексы, служебные поля и т.д. :
-S+ = 0.85 TiB
+Бинарные объекты:
+Допустим на одну игру 5 скриншотов по 1 МВ и 1 трейлер на 50 МВ, а для Cloud_save 1 MB
+Storage_cloud_save = 629.43 TiB
+Storage_game_media = 6.79 TiB
 
 #### Steam Cloud
 По данным SteamDB, поддержку Steam Cloud имеют 67 225 игр из 128 950, то есть около 52.1% каталога. Для расчёта принимается, что облачное хранение активно используется той же долей MAU, а средний активный набор сохранений на одного такого пользователя составляет 10 MB. Это именно проектное допущение, а не публичная цифра Valve. Официальная документация Steam Cloud лишь задаёт ограничения: 100 MB на один write/chunk и предупреждение о снижении производительности при размерах свыше 256 MB.
@@ -251,6 +258,72 @@ S_cloud = 132000000 * 67225 * 10MB / 128950 = 0.641 PiB
 Если хранить предыдущую версию:
 S_cloud = 1.282PiB
 
+## 3. Глобальная балансировка
+### Разбиение по доменам
+* Основной домен - steam.example.com
+Веб-интерфейс платформы, storefront, витрина, входная точка для пользователя.
+* API - api.steam.example.com
+Авторизация, библиотека, платежные операции, уведомления, достижения, отзывы, работа с профилем.
+* Статика - static.steam.example.com
+JS/CSS, иконки, мелкие изображения, конфигурационные файлы фронтенда.
+* Медиа и загрузки - cdn.steam.example.com
+Скриншоты, трейлеры, depot-объекты, игровые билды, патчи и прочие крупные бинарные данные.
+* Облачные сохранения - cloud.steam.example.com
+Синхронизация Steam Cloud-подобных файлов сохранения и их метаданных.
+Такое разбиение оправдано тем, что сама Steam работает как глобально распределенная система с 400+ distributed servers worldwide и 1TB fiber backbone, а официальный Steam Download Stats показывает отдельные крупные контуры нагрузки по регионам Asia, Europe, North America, South America и Russia/CIS.[6](https://www.steamgames.com/steamworks/ov_cloud.php?ref=stebet.net&utm_source=chatgpt.com)
+### Расположение дата-центров
+Для аналога стим следует разделить инфраструктуру на:
+* core-регионы
+* edge/download-регионы 
+Мы будем размещать edge/download там же, где core, так как будет находиться рядом с крутыми сетевыми хабами.
+#### Северная Америка
+* Ashburn (US East) - основной регион для storefront/API в Северной Америке. Выбор обусловлен тем, что Ашберн находится в крупнейшем мировом рынке дата-центров и имеет очень высокую плотность волоконной связности. Это хороший базовый регион для control plane и платежного контура.[7](https://services.global.ntt/en-us/services-and-products/global-data-centers/global-locations/americas/ashburn-data-centers?utm_source=chatgpt.com)
+* Dallas (US Central) - резервный регион для Северной Америки и точка диверсификации относительно US East. Здесь ставка делается на географическое разнесение и более устойчивое аварийное переключение внутри континента.
+#### Европа
+* Frankfurt - основной европейский регион. Франкфурт является одним из крупнейших интернет-хабов мира: DE-CIX Frankfurt называет себя ведущим в мире, с пиковым трафиком 18+ Tbps и доступом к 1000+ сетям. Это логичный выбор для европейского storefront/API и части origin-трафика.[8](https://www.de-cix.net/en/locations/frankfurt?utm_source=chatgpt.com)
+* Warsaw - резервный европейский регион и точка покрытия Восточной Европы и части трафика Russia/CIS. Equinix называет Варшаву major interconnection gateway to eastern Europe, а локальные IX в Польше дают хороший задел под regional edge и резерв storefront/API.[9](https://www.equinix.com/data-centers/europe-colocation/poland-colocation/warsaw-data-centers?utm_source=chatgpt.com)
+#### Азия
+* Singapore - основной APAC-регион. SGIX работает как распределенная peering-сеть в крупных дата-центрах в Сингапуре и позиционируется как один из крупнейших открытых и нейтральных интернет-обменников Азии. Для глобального игрового сервиса это удобная точка для Северо-Восточной Азии и части островных государств.[10](https://www.sgix.sg/about-us-2/?utm_source=chatgpt.com)
+* Mumbai - второй азиатский регион. DE-CIX India указывает, что в Мумбаи подключено 407 сетей, а сам узел уже проходил отметку 1 Tbps пропускная способность и продолжал наращивать емкость. Это делает Мумбаи хорошей точкой для Северной Азии и части ближневосточного трафика.[11](https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/?utm_source=chatgpt.com)
+* Tokyo - Токио как отдельный высокосвязный хаб для Японии и части восточноазиатского трафика.
+#### Южная Америка
+* São Paulo - основной южноамериканский регион. IX.br и NIC.br прямо указывают, что São Paulo является глобальным лидером по объему трафика обмена и в 2026 году достигал 32 Tbps на локальном PTT. Для континента это очевидная точка размещения core edge/download-инфраструктуры.[12](https://nic.br/noticia/releases/ix-br-hits-record-50-tbit-s-of-aggregated-internet-traffic-driven-by-content-and-digital-services/?utm_source=chatgpt.com)
+
+|Дата-центр/регион|Доля глобальной нагрузки|
+|:--:|:--:|
+|Singapore|	22.0%|
+|Mumbai|	14.0%|
+|Tokyo |	5.6%|
+|Frankfurt|	18.0%|
+|Warsaw |	11.9%|
+|Ashburn|	12.0%|
+|Dallas|	8.7%|
+|São Paulo|	7.8%|
+|Итого|	100%|
+
+### Используемые технологии глобальной балансировки
+|Домен|	Метод регулировки|
+|:--:|:--:|
+|steam.example.com|	Latency-based DNS + health checks|
+|api.steam.example.com|	Latency-based DNS + weighted failover|
+|static.steam.example.com|	GeoDNS + CDN|
+|cdn.steam.example.com|	GeoDNS + anycast edge|
+|cloud.steam.example.com|	Latency-based DNS + regional stickiness|
+
+Latency-based DNS используется для storefront/API/community/cloud, потому что для них важны задержка и корректное направление пользователя в ближайший здоровый регион.
+
+GeoDNS + anycast edge используется для cdn, потому что основной трафик здесь состоит из крупных бинарных объектов. Для него важнее не sticky-сессия, а близость к пользователю, большая пропускная способность и быстрый вывод трафика на ближайший POP.
+
+### Перенаправление запросов в случае отказа
+* Ashburn → резерв: Dallas → 2-й резерв: Frankfurt
+* Dallas → резерв: Ashburn → 2-й резерв: São Paulo
+* Frankfurt → резерв: Warsaw → 2-й резерв: Ashburn
+* Warsaw → резерв: Frankfurt → 2-й резерв: Singapore
+* Singapore → резерв: Tokyo → 2-й резерв: Mumbai
+* Tokyo → резерв: Singapore → 2-й резерв: Mumbai
+* Mumbai → резерв: Singapore → 2-й резерв: Tokyo
+
+![Дата-центры](img/konturnaya-karta-mira.jpg)
 ## 5 Логическая БД
 ```mermaid
 erDiagram
