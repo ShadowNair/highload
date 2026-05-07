@@ -296,44 +296,24 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 |     Singapore     |          ~33,3%         |
 |     **Итого**     |        **100%**        |
 
-| Дата-центр/регион | Доля CDN/download-нагрузки |
-| :---------------: | :------------------------: |
-|      Ashburn      |            ~12.4%           |
-|       Dallas      |            ~13.4%           |
-|     Frankfurt     |            ~12.5%           |
-|       Warsaw      |            ~11.5%           |
-|     Singapore     |            ~12.4%           |
-|       Mumbai      |            ~15%           |
-|       Tokyo       |            ~15%           |
-|     São Paulo     |            ~7.8%           |
-|     **Итого**     |          **100%**          |
-
-
 ### Используемые технологии глобальной балансировки
 |           Домен          |           Контур          |            Метод регулировки            |
 | :----------------------: | :-----------------------: | :-------------------------------------: |
-|     steam.example.com    |          API/core         |    Latency-based DNS + health checks    |
-|   api.steam.example.com  |          API/core         |  Latency-based DNS + weighted failover  |
+|     steam.example.com    |          API/core         |    Geo DNS + health checks    |
+|   api.steam.example.com  |          API/core         |  GeoDNS + weighted failover  |
 | static.steam.example.com |        CDN/download       |            GeoDNS + CDN cache           |
 |   cdn.steam.example.com  |        CDN/download       |          GeoDNS + anycast       |
-|  cloud.steam.example.com | API/core + object storage | Latency-based DNS + regional stickiness |
+|  cloud.steam.example.com | API/core + object storage | GeoDNS + regional stickiness |
 
 
-Latency-based DNS используется для storefront/API/community/cloud, потому что для них важны задержка и корректное направление пользователя в ближайший здоровый регион.
-
-GeoDNS + anycast edge используется для cdn, потому что основной трафик здесь состоит из крупных бинарных объектов. Для него важнее не sticky-сессия, а близость к пользователю, большая пропускная способность и быстрый вывод трафика на ближайший POP.
+Мы разделили мир на 3 региона: Южная+Северная Америка, Европа+ Африка+Россия, Азия + Австралия. Нагрузка раскидана В пределах 30-35%. CDN установим в узлах на тех же датацентрах, так как они находятся в месте наибольшего скопления потоков из-за чего большие объекты передаем при помощи мультиплексирования. Так как по регионам распределяем, то нам достаточно GeoDNS. 
 
 ### Перенаправление запросов в случае отказа
 | Основной регион | Резервный регион | Второй резерв |
 | :-------------: | :--------------: | :-----------: |
-|     Ashburn     |      Dallas      |   Frankfurt   |
-|      Dallas     |      Ashburn     |  |
-|    Frankfurt    |      Warsaw      |    Ashburn    |
-|      Warsaw     |     Frankfurt    |   Singapore   |
-|    Singapore    |       Tokyo      |     Mumbai    |
-|      Tokyo      |     Singapore    |     Mumbai    |
-|      Mumbai     |     Singapore    |     Tokyo     |
-|    São Paulo    |      Ashburn     |     Dallas    |
+|     Ashburn     |      Frankfurt   |   Singapore   |
+|      Frankfurt  |  Singapore       |   Ashburn     |
+|    Singapore    |      Frankfurt   |    Ashburn    |
 
 
 ![Дата-центры](img/konturnaya-karta-mira.jpg)
@@ -865,58 +845,228 @@ flowchart TB
 
 #### 1. Отзывы
 
-Логическая таблица REVIEWS разбивается на две физические таблицы:
+Логическая таблица REVIEWS физически разбивается на:
 
-* reviews_by_game для чтения отзывов на странице игры;
-* reviews_by_user для отображения отзывов конкретного пользователя.
+* reviews_by_game
+* reviews_by_user
 
-При создании или обновлении отзыва запись пишется сразу в обе таблицы. Это устраняет дорогостоящие выборки по двум разным ключам.
+Дополнительно в записи денормализуются:
 
-#### 2. Друзья
+* user_display_name
+* user_avatar_url
+* game_title
+* game_capsule_url
+* rating
+* helpful_count
+* created_at
 
-Таблица FRIENDS хранится как friends_by_user.
-Связь дублируется в обе стороны:
+Обоснование:
+У системы есть два принципиально разных read-path:
+* показать отзывы на карточке игры;
+* показать отзывы конкретного пользователя.
 
-* (user_id -> friend_id)
-* (friend_id -> user_id)
+#### 2. Библиотека
 
-Это позволяет мгновенно получать список друзей пользователя без обратных join-операций.
+Таблица USER_LIBRARY физически хранится как user_library_by_user, причем кроме логических полей владения в нее дополнительно дублируются:
 
-#### 3. Уведомления
+* game_title
+* capsule_image_url
+* developer
+* release_date
+* last_known_price
+* has_cloud_save
 
-Уведомления хранятся в notifications_by_user, а количество непрочитанных дополнительно дублируется в Redis-ключ:
+Обоснование:
+Главный пользовательский сценарий — быстро открыть библиотеку и увидеть список игр.
+Если при каждом открытии библиотеки дополнительно обращаться к games и game_media, то пользовательский запрос станет дороже и по latency, и по ресурсам.
 
-* notifications_unread:{user_id}
+#### 3. Друзья
 
-Это позволяет быстро отдавать счетчик уведомлений без чтения большого раздела ScyllaDB.
+Физически используются:
 
-#### 4. Облачные сохранения
+* friends_by_user
+* friend_requests_by_user
 
-Физически CLOUD_SAVES разделяется на:
+В запись друзей могут дублироваться:
 
-* cloud_saves_meta_by_user_game для метаданных;
-* объект в bucket: cloud-saves для бинарного содержимого.
+* friend_display_name
+* friend_avatar_url
+* last_known_game_id
+* last_known_game_title
 
-Таким образом БД не нагружается хранением больших файлов, а отвечает только за метаданные, контрольные суммы и версии.
+А online/offline/in-game состояние физически хранится в Redis:
 
-#### 5. Каталог игр
+* presence:{user_id}
 
+Обоснование:
+Список друзей — горячий экран. Пользователь ожидает, что при открытии клиента он сразу увидит, кто онлайн и во что играет. Если собирать это через join между friends, user_profiles и текущим presence-state, latency будет выше.
+
+#### 4. Уведомления
+
+Уведомления хранятся в notifications_by_user, а количество непрочитанных дополнительно дублируется в Redis:
+
+notifications_unread:{user_id}
+
+В запись уведомления денормализуются:
+
+* actor_display_name
+* actor_avatar_url
+* game_title
+* game_capsule_url
+* target_url
+
+Обоснование:
+Уведомления — это fan-out/read-heavy контур.
+
+#### 5. Облачные сохранения
+
+Вместо одной физической таблицы используются:
+
+* cloud_saves_latest_by_user_game
+* cloud_saves_versions_by_user_game
+
+Где:
+
+* latest хранит только актуальную версию;
+* versions хранит историю версий.
+
+Обоснование:
+Основной read-path — получить последнюю версию cloud save. Если хранить только историю, каждая sync-операция будет просматривать версии внутри partition. Разделение на latest и history делает этот сценарий прямым и дешевым.
+
+#### 6. Достижения пользователя
+Таблица USER_ACHIEVEMENTS физически хранится как user_achievements_by_user, причем в запись дополнительно денормализуются статические поля из ACHIEVEMENTS:
+
+* achievement_name
+* icon_url
+* points
+* game_title
+
+Обоснование:
+Экран достижений пользователя должен открываться без обязательного join с achievements.
+
+#### 7. Каталог и поиск
 По таблице games строится отдельный денормализованный индекс games_search_index в OpenSearch.
-В индекс попадают:
+В индекс дополнительно попадают:
 
-* название игры;
-* разработчик;
-* издатель;
-* теги;
-* жанры;
-* цена;
-* агрегаты по отзывам.
+* title
+* developer
+* publisher
+* genres
+* tags
+* price
+* deleted
+* capsule_image_url
+* review_score
+* reviews_count
+* release_date
 
-Пользовательский поиск идет в OpenSearch, а PostgreSQL остается источником истины.
+Обоснование:
+Каталог — основной read-heavy контур платформы. Полнотекстовый поиск, фильтрация и faceted navigation должны обслуживаться отдельным движком
 
 ---
 
-### 6.5 Детализация физической реализации по таблицам
+### 6.5 Индексация
+#### PostrgeSQL
+users:
+* PK(id) — базовый доступ по идентификатору;
+* UNIQUE(email) — логин и гарантия уникальности;
+* INDEX(last_login) — выборки по давности активности, сервисные задачи.
+
+user_profiles:
+* PK(id)
+* UNIQUE(user_id)
+
+wallet_transactions:
+* PK(id)
+* INDEX(user_wallet_id, created_at DESC) — история транзакций пользователя;
+* INDEX(status, created_at DESC) — выбор pending/error транзакций.
+
+games:
+* PK(id)
+* INDEX(release_date DESC) WHERE deleted=false
+* INDEX(updated_at DESC)
+
+game_media_meta:
+* PK(id)
+* INDEX(game_id, media_type, created_at DESC)
+
+achievements:
+* PK(id)
+* INDEX(game_id)
+
+#### ScyllaDB
+
+user_library_by_user:
+* PRIMARY KEY ((user_id), game_id)
+
+Закрывает:
+* открыть библиотеку пользователя;
+* проверить владение конкретной игрой.
+
+reviews_by_game:
+* PRIMARY KEY ((game_id), created_at, review_id)
+* WITH CLUSTERING ORDER BY (created_at DESC, review_id DESC)
+
+Закрывает:
+* показать последние отзывы по игре.
+
+reviews_by_user:
+* PRIMARY KEY ((user_id), created_at, review_id)
+* WITH CLUSTERING ORDER BY (created_at DESC, review_id DESC)
+
+Закрывает:
+* показать отзывы пользователя.
+
+friends_by_user:
+* PRIMARY KEY ((user_id), friend_id)
+
+Закрывает:
+* получить список друзей пользователя.
+
+friend_requests_by_user:
+* PRIMARY KEY ((user_id), created_at, friend_id)
+
+Закрывает:
+* открыть входящие заявки пользователя.
+
+notifications_by_user:
+* PRIMARY KEY ((user_id), created_at, notification_id)
+* WITH CLUSTERING ORDER BY (created_at DESC, notification_id DESC)
+
+Закрывает:
+* ленту уведомлений по пользователю в обратном порядке времени.
+
+cloud_saves_latest_by_user_game:
+* PRIMARY KEY ((user_id, game_id))
+
+Закрывает:
+* быстро получить последнюю версию сохранения.
+
+cloud_saves_versions_by_user_game:
+* PRIMARY KEY ((user_id, game_id), version)
+* WITH CLUSTERING ORDER BY (version DESC)
+
+Закрывает:
+* историю версий по пользователю и игре.
+
+user_achievements_by_user:
+* PRIMARY KEY ((user_id), game_id, achievement_id)
+
+Закрывает:
+* получить достижения пользователя по игре;
+* получить агрегированный прогресс пользователя.
+
+#### Redis
+* session:{token} — доступ по токену сессии;
+* user_sessions:{user_id} — массовое удаление сессий пользователя;
+* presence:{user_id} — онлайн-статус;
+* notifications_unread:{user_id} — счетчик непрочитанных;
+* review_stats:{game_id} — горячие агрегаты отзывов;
+* hot_cache:* — кэш популярных карточек, библиотеки, списков.
+
+---
+
+### 6.6 Детализация физической реализации по таблицам
 
 #### users
 
