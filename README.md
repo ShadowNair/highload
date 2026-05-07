@@ -764,7 +764,64 @@ erDiagram
 ---
 
 ### 6.2 Схема физического размещения данных
-```mermaid flowchart TB subgraph PG["PostgreSQL 16 + Patroni"] USERS["users"] USER_PROFILES["user_profiles"] USER_WALLET["user_wallet"] WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"] GAMES["games"] GAME_MEDIA_META["game_media_meta"] ACHIEVEMENTS["achievements"] end subgraph SCY["ScyllaDB Cluster"] USER_LIBRARY["user_library_by_user"] REVIEWS_GAME["reviews_by_game"] REVIEWS_USER["reviews_by_user"] FRIENDS["friends_by_user"] FRIEND_REQUESTS["friend_requests_by_user"] NOTIFICATIONS["notifications_by_user"] CLOUD_SAVES_LATEST["cloud_saves_latest_by_user_game"] CLOUD_SAVES_VERS["cloud_saves_versions_by_user_game"] USER_ACHIEVEMENTS["user_achievements_by_user"] end subgraph REDIS["Redis Cluster"] SESSIONS["session:{token}"] USER_SESSIONS["user_sessions:{user_id}"] PRESENCE["presence:{user_id}"] UNREAD["notifications_unread:{user_id}"] HOT_CACHE["hot cache"] REVIEW_STATS["review_stats:{game_id}"] end subgraph S3["S3 / MinIO"] GAME_MEDIA_FILES["bucket: game-media"] CLOUD_SAVE_FILES["bucket: cloud-saves"] end subgraph OS["OpenSearch"] GAMES_INDEX["games_search_index"] end USERS --> USER_PROFILES USERS --> USER_WALLET USER_WALLET --> WALLET_TRANSACTIONS GAMES --> GAME_MEDIA_META GAMES --> ACHIEVEMENTS GAMES --> USER_LIBRARY GAMES --> REVIEWS_GAME GAMES --> CLOUD_SAVES_LATEST GAMES --> CLOUD_SAVES_VERS ACHIEVEMENTS --> USER_ACHIEVEMENTS GAME_MEDIA_META --> GAME_MEDIA_FILES CLOUD_SAVES_LATEST --> CLOUD_SAVE_FILES CLOUD_SAVES_VERS --> CLOUD_SAVE_FILES GAMES --> GAMES_INDEX
+```mermaid
+flowchart TB
+    subgraph PG["PostgreSQL 16 + Patroni"]
+        USERS["users"]
+        USER_PROFILES["user_profiles"]
+        USER_WALLET["user_wallet"]
+        WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"]
+        GAMES["games"]
+        GAME_MEDIA_META["game_media_meta"]
+        ACHIEVEMENTS["achievements"]
+    end
+
+    subgraph SCY["ScyllaDB Cluster"]
+        USER_LIBRARY["user_library_by_user"]
+        REVIEWS_GAME["reviews_by_game"]
+        REVIEWS_USER["reviews_by_user"]
+        FRIENDS["friends_by_user"]
+        FRIEND_REQUESTS["friend_requests_by_user"]
+        NOTIFICATIONS["notifications_by_user"]
+        CLOUD_SAVES_LATEST["cloud_saves_latest_by_user_game"]
+        CLOUD_SAVES_VERS["cloud_saves_versions_by_user_game"]
+        USER_ACHIEVEMENTS["user_achievements_by_user"]
+    end
+
+    subgraph REDIS["Redis Cluster"]
+        SESSIONS["session:{token}"]
+        USER_SESSIONS["user_sessions:{user_id}"]
+        PRESENCE["presence:{user_id}"]
+        UNREAD["notifications_unread:{user_id}"]
+        HOT_CACHE["hot cache"]
+        REVIEW_STATS["review_stats:{game_id}"]
+    end
+
+    subgraph S3["S3 / MinIO"]
+        GAME_MEDIA_FILES["bucket: game-media"]
+        CLOUD_SAVE_FILES["bucket: cloud-saves"]
+    end
+
+    subgraph OS["OpenSearch"]
+        GAMES_INDEX["games_search_index"]
+    end
+
+    USERS --> USER_PROFILES
+    USERS --> USER_WALLET
+    USER_WALLET --> WALLET_TRANSACTIONS
+    GAMES --> GAME_MEDIA_META
+    GAMES --> ACHIEVEMENTS
+
+    GAMES --> USER_LIBRARY
+    GAMES --> REVIEWS_GAME
+    GAMES --> CLOUD_SAVES_LATEST
+    GAMES --> CLOUD_SAVES_VERS
+    ACHIEVEMENTS --> USER_ACHIEVEMENTS
+
+    GAME_MEDIA_META --> GAME_MEDIA_FILES
+    CLOUD_SAVES_LATEST --> CLOUD_SAVE_FILES
+    CLOUD_SAVES_VERS --> CLOUD_SAVE_FILES
+    GAMES --> GAMES_INDEX
 ```
 
 ---
@@ -783,22 +840,22 @@ erDiagram
 * показать достижения пользователя по конкретной игре.
 
 Под эти сценарии и строятся физические представления.
-| Логическая таблица    | Физическое представление                                        | СУБД             | Индексы                                                                                             | Шардинг / партиционирование                         | Резервирование               |
-| --------------------- | --------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------- |
-| users               | users                                                         | PostgreSQL       | PK(id), UNIQUE(email), INDEX(last_login), INDEX(region)                                     | без шардинга, чтение с read replica                 | 1 primary + 2 replicas       |
-| user_profiles       | user_profiles                                                 | PostgreSQL       | PK(id), UNIQUE(user_id), INDEX(user_id)                                                       | без шардинга                                        | 1 primary + 2 replicas       |
-| sessions            | session:{token}, user_sessions:{user_id}                    | Redis Cluster    | key-based access по токену и user_id                                                                | native Redis sharding по hash slot                  | 3 masters + 3 replicas       |
-| user_wallet         | user_wallet                                                   | PostgreSQL       | PK(id), UNIQUE(user_id)                                                                         | без шардинга                                        | 1 primary + 2 replicas       |
-| wallet_transactions | wallet_transactions_YYYY_MM                                   | PostgreSQL       | PK(id), INDEX(user_wallet_id, created_at DESC), INDEX(status, created_at)                     | range partition по created_at помесячно           | 1 primary + 2 replicas       |
-| games               | games                                                         | PostgreSQL       | PK(id), INDEX(release_date), INDEX(price_cents)                                               | без шардинга                                        | 1 primary + 2 replicas       |
-| game_media          | game_media_meta + файлы в bucket: game-media                | PostgreSQL + S3  | PK(id), INDEX(game_id, media_type)                                                              | без шардинга, файлы по префиксу game_id/          | PG replicas + S3 replication |
-| user_library        | user_library_by_user                                          | ScyllaDB         | PRIMARY KEY ((user_id), game_id)                                                                  | распределение по partition key user_id            | RF=3                         |
-| reviews             | reviews_by_game, reviews_by_user                            | ScyllaDB         | PRIMARY KEY ((game_id), created_at, review_id) и PRIMARY KEY ((user_id), created_at, review_id) | partition key game_id и отдельно user_id        | RF=3                         |
-| friends             | friends_by_user                                               | ScyllaDB         | PRIMARY KEY ((user_id), friend_id)                                                                | partition key user_id                             | RF=3                         |
-| notifications       | notifications_by_user + unread counter в Redis                | ScyllaDB + Redis | PRIMARY KEY ((user_id), created_at, notification_id)                                              | partition key user_id, TTL по старым уведомлениям | RF=3 + Redis replica         |
-| cloud_saves         | cloud_saves_meta_by_user_game + файлы в bucket: cloud-saves | ScyllaDB + S3    | PRIMARY KEY ((user_id, game_id), version)                                                         | partition key (user_id, game_id)                  | RF=3 + S3 replication        |
-| achievements        | achievements                                                  | PostgreSQL       | PK(id), INDEX(game_id)                                                                          | без шардинга                                        | 1 primary + 2 replicas       |
-| user_achievements   | user_achievements_by_user                                     | ScyllaDB         | PRIMARY KEY ((user_id), game_id, achievement_id)                                                  | partition key user_id                             | RF=3                         |
+| Логическая таблица    | Физическое представление                                                                          | СУБД             | Индексы / ключи                                                                                        | Обоснование                                                                                                                                                                                               | Шардинг / партиционирование                                                         | Резервирование               |
+| --------------------- | ------------------------------------------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------- |
+| `users`               | `users`                                                                                           | PostgreSQL       | `PK(id)`, `UNIQUE(email)`, `INDEX(last_login)`                                                         | `email` нужен для логина и уникальности; `last_login` нужен для административных и сервисных выборок. Отдельный индекс по `region` не вводится, так как это не hot-path OLTP и проще вынести в аналитику. | без шардинга, чтение с read replica                                                 | 1 primary + 2 replicas       |
+| `user_profiles`       | `user_profiles`                                                                                   | PostgreSQL       | `PK(id)`, `UNIQUE(user_id)`                                                                            | Профиль читается по `user_id`. Отдельный индекс по `display_name` не нужен, так как поиск по пользователям не входит в MVP.                                                                               | без шардинга                                                                        | 1 primary + 2 replicas       |
+| `sessions`            | `session:{token}`, `user_sessions:{user_id}`                                                      | Redis Cluster    | key-based access                                                                                       | Сессии всегда читаются по токену или массово удаляются по `user_id`. Реляционная таблица здесь только добавила бы latency и write amplification.                                                          | native Redis sharding по hash slot                                                  | 3 masters + 3 replicas       |
+| `user_wallet`         | `user_wallet`                                                                                     | PostgreSQL       | `PK(id)`, `UNIQUE(user_id)`                                                                            | Один пользователь — один кошелек. Основной read-path: получить кошелек пользователя.                                                                                                                      | без шардинга                                                                        | 1 primary + 2 replicas       |
+| `wallet_transactions` | `wallet_transactions_YYYY_MM`                                                                     | PostgreSQL       | `PK(id)`, `INDEX(user_wallet_id, created_at DESC)`, `INDEX(status, created_at DESC)`                   | История транзакций почти всегда читается по кошельку и по времени; pending/error транзакции удобнее выбирать по `status`.                                                                                 | range partition по `created_at`, помесячно                                          | 1 primary + 2 replicas       |
+| `games`               | `games`                                                                                           | PostgreSQL       | `PK(id)`, `INDEX(release_date DESC)`                                                                   | PostgreSQL — источник истины каталога. Отдельный индекс по `price_cents` не обязателен, так как каталог и фильтры обслуживаются через OpenSearch.                                                         | без шардинга                                                                        | 1 primary + 2 replicas       |
+| `game_media`          | `game_media_meta` + объекты в `game-media/`                                                       | PostgreSQL + S3  | `PK(id)`, `INDEX(game_id, media_type, created_at)`                                                     | Карточка игры почти всегда читает медиа по `game_id`, иногда отдельно по типу (capsule, screenshot, trailer).                                                                                             | без шардинга, файлы по префиксу `game_id/`                                          | PG replicas + S3 replication |
+| `user_library`        | `user_library_by_user`                                                                            | ScyllaDB         | `PRIMARY KEY ((user_id), game_id)`                                                                     | Главный запрос: “показать библиотеку пользователя”. Partition key = `user_id` позволяет читать библиотеку одной операцией.                                                                                | partition key `user_id`                                                             | RF=3                         |
+| `reviews`             | `reviews_by_game`, `reviews_by_user`                                                              | ScyllaDB         | `PRIMARY KEY ((game_id), created_at, review_id)` + `PRIMARY KEY ((user_id), created_at, review_id)`    | Есть два независимых шаблона чтения: отзывы на странице игры и отзывы конкретного пользователя. Один индекс на нормализованной таблице оба паттерна эффективно не закроет.                                | partition key `game_id` и отдельно `user_id`; clustering order по `created_at DESC` | RF=3                         |
+| `friends`             | `friends_by_user`                                                                                 | ScyllaDB         | `PRIMARY KEY ((user_id), friend_id)`                                                                   | Основной запрос: список друзей пользователя. Выборка должна быть одной операцией по `user_id`.                                                                                                            | partition key `user_id`                                                             | RF=3                         |
+| `notifications`       | `notifications_by_user` + `notifications_unread:{user_id}`                                        | ScyllaDB + Redis | `PRIMARY KEY ((user_id), created_at, notification_id)`                                                 | Лента уведомлений читается по пользователю в обратном порядке времени; счетчик непрочитанных выгоднее держать отдельно в Redis.                                                                           | partition key `user_id`, TTL по старым уведомлениям                                 | RF=3 + Redis replica         |
+| `cloud_saves`         | `cloud_saves_latest_by_user_game`, `cloud_saves_versions_by_user_game` + объекты в `cloud-saves/` | ScyllaDB + S3    | `PRIMARY KEY ((user_id), game_id)` для latest; `PRIMARY KEY ((user_id, game_id), version)` для history | Важно быстро получать **последнюю** версию сохранения без сканирования всей истории. Поэтому latest и version history лучше разделить физически.                                                          | partition key `(user_id, game_id)`                                                  | RF=3 + S3 replication        |
+| `achievements`        | `achievements`                                                                                    | PostgreSQL       | `PK(id)`, `INDEX(game_id)`                                                                             | Достижения почти всегда читаются по игре.                                                                                                                                                                 | без шардинга                                                                        | 1 primary + 2 replicas       |
+| `user_achievements`   | `user_achievements_by_user`                                                                       | ScyllaDB         | `PRIMARY KEY ((user_id), game_id, achievement_id)`                                                     | Основной запрос: показать достижения пользователя по конкретной игре.                                                                                                                                     | partition key `user_id`                                                             | RF=3                         |
 
 ---
 
