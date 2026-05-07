@@ -745,63 +745,232 @@ erDiagram
 
 ### 6.2 Схема физического размещения данных
 ```mermaid
-flowchart TB
-    subgraph PG["PostgreSQL 16 + Patroni"]
-        USERS["users"]
-        USER_PROFILES["user_profiles"]
-        USER_WALLET["user_wallet"]
-        WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"]
-        GAMES["games"]
-        GAME_MEDIA_META["game_media_meta"]
-        ACHIEVEMENTS["achievements"]
-    end
+erDiagram
+    USERS {
+        _ id PK
+        _ email "AK"
+        _ password_hash
+        _ created_at
+        _ updated_at
+        _ last_login
+        _ region
+        _ preferences_json
+        _ deleted
+    }
 
-    subgraph SCY["ScyllaDB Cluster"]
-        USER_LIBRARY["user_library_by_user"]
-        REVIEWS_GAME["reviews_by_game"]
-        REVIEWS_USER["reviews_by_user"]
-        FRIENDS["friends_by_user"]
-        FRIEND_REQUESTS["friend_requests_by_user"]
-        NOTIFICATIONS["notifications_by_user"]
-        CLOUD_SAVES_LATEST["cloud_saves_latest_by_user_game"]
-        CLOUD_SAVES_VERS["cloud_saves_versions_by_user_game"]
-        USER_ACHIEVEMENTS["user_achievements_by_user"]
-    end
+    USER_PROFILES {
+        _ id PK
+        _ user_id FK "AK"
+        _ avatar_url
+        _ display_name
+        _ bio
+        _ privacy_settings_json
+        _ created_at
+        _ updated_at
+    }
 
-    subgraph REDIS["Redis Cluster"]
-        SESSIONS["session:{token}"]
-        USER_SESSIONS["user_sessions:{user_id}"]
-        PRESENCE["presence:{user_id}"]
-        UNREAD["notifications_unread:{user_id}"]
-        HOT_CACHE["hot cache"]
-        REVIEW_STATS["review_stats:{game_id}"]
-    end
+    USER_WALLET {
+        _ id PK
+        _ user_id FK "AK"
+        _ balance_cents
+        _ currency
+        _ created_at
+        _ updated_at
+    }
 
-    subgraph S3["S3 / MinIO"]
-        GAME_MEDIA_FILES["bucket: game-media"]
-        CLOUD_SAVE_FILES["bucket: cloud-saves"]
-    end
+    WALLET_TRANSACTIONS {
+        _ id PK
+        _ user_wallet_id FK
+        _ amount_cents
+        _ transaction_type
+        _ payment_method
+        _ status
+        _ created_at
+    }
 
-    subgraph OS["OpenSearch"]
-        GAMES_INDEX["games_search_index"]
-    end
+    GAMES {
+        _ id PK
+        _ title
+        _ developer
+        _ publisher
+        _ release_date
+        _ price_cents
+        _ genres_json
+        _ tags_json
+        _ system_requirements_json
+        _ deleted
+        _ created_at
+        _ updated_at
+    }
 
-    USERS --> USER_PROFILES
-    USERS --> USER_WALLET
-    USER_WALLET --> WALLET_TRANSACTIONS
-    GAMES --> GAME_MEDIA_META
-    GAMES --> ACHIEVEMENTS
+    GAME_MEDIA_META {
+        _ id PK
+        _ game_id FK
+        _ media_type
+        _ media_url
+        _ resolution
+        _ file_size_bytes
+        _ created_at
+    }
 
-    GAMES --> USER_LIBRARY
-    GAMES --> REVIEWS_GAME
-    GAMES --> CLOUD_SAVES_LATEST
-    GAMES --> CLOUD_SAVES_VERS
-    ACHIEVEMENTS --> USER_ACHIEVEMENTS
+    ACHIEVEMENTS {
+        _ id PK
+        _ game_id FK
+        _ achievement_name
+        _ description
+        _ icon_url
+        _ points
+        _ created_at
+    }
 
-    GAME_MEDIA_META --> GAME_MEDIA_FILES
-    CLOUD_SAVES_LATEST --> CLOUD_SAVE_FILES
-    CLOUD_SAVES_VERS --> CLOUD_SAVE_FILES
-    GAMES --> GAMES_INDEX
+    USER_LIBRARY_BY_USER {
+        _ user_id PK
+        _ game_id PK
+        _ owned_bool
+        _ installed_bool
+        _ cloud_save_enabled
+        _ playtime_minutes
+        _ last_played
+        _ game_title
+        _ capsule_image_url
+        _ developer
+        _ release_date
+        _ last_known_price
+        _ has_cloud_save
+        _ created_at
+        _ updated_at
+    }
+
+    REVIEWS_BY_GAME {
+        _ game_id PK
+        _ created_at PK
+        _ review_id PK
+        _ user_id
+        _ rating
+        _ title
+        _ body
+        _ helpful_count
+        _ user_display_name
+        _ user_avatar_url
+        _ game_title
+        _ game_capsule_url
+        _ updated_at
+    }
+
+    REVIEWS_BY_USER {
+        _ user_id PK
+        _ created_at PK
+        _ review_id PK
+        _ game_id
+        _ rating
+        _ title
+        _ body
+        _ helpful_count
+        _ game_title
+        _ game_capsule_url
+        _ updated_at
+    }
+
+    FRIENDS_BY_USER {
+        _ user_id PK
+        _ friend_id PK
+        _ status
+        _ since_date
+        _ created_at
+        _ friend_display_name
+        _ friend_avatar_url
+        _ last_known_game_id
+        _ last_known_game_title
+    }
+
+    FRIEND_REQUESTS_BY_USER {
+        _ user_id PK
+        _ created_at PK
+        _ friend_id PK
+        _ status
+        _ requester_display_name
+        _ requester_avatar_url
+    }
+
+    NOTIFICATIONS_BY_USER {
+        _ user_id PK
+        _ created_at PK
+        _ notification_id PK
+        _ notification_text
+        _ type
+        _ status
+        _ read_bool
+        _ actor_display_name
+        _ actor_avatar_url
+        _ game_title
+        _ game_capsule_url
+        _ target_url
+        _ updated_at
+    }
+
+    CLOUD_SAVES_LATEST_BY_USER_GAME {
+        _ user_id PK
+        _ game_id PK
+        _ file_path
+        _ file_size_bytes
+        _ checksum
+        _ version
+        _ created_at
+        _ updated_at
+    }
+
+    CLOUD_SAVES_VERSIONS_BY_USER_GAME {
+        _ user_id PK
+        _ game_id PK
+        _ version PK
+        _ file_path
+        _ file_size_bytes
+        _ checksum
+        _ created_at
+        _ updated_at
+    }
+
+    USER_ACHIEVEMENTS_BY_USER {
+        _ user_id PK
+        _ game_id PK
+        _ achievement_id PK
+        _ unlocked_bool
+        _ unlocked_at
+        _ progress_percent
+        _ achievement_name
+        _ icon_url
+        _ points
+        _ game_title
+        _ created_at
+        _ updated_at
+    }
+
+    USERS ||--|| USER_PROFILES : has
+    USERS ||--|| USER_WALLET : has
+    USER_WALLET ||--o{ WALLET_TRANSACTIONS : has
+
+    GAMES ||--o{ GAME_MEDIA_META : contains
+    GAMES ||--o{ ACHIEVEMENTS : has
+
+    USERS ||--o{ USER_LIBRARY_BY_USER : owns
+    GAMES ||--o{ USER_LIBRARY_BY_USER : in_library
+
+    GAMES ||--o{ REVIEWS_BY_GAME : receives
+    USERS ||--o{ REVIEWS_BY_USER : writes
+
+    USERS ||--o{ FRIENDS_BY_USER : has_friends
+    USERS ||--o{ FRIEND_REQUESTS_BY_USER : receives_requests
+
+    USERS ||--o{ NOTIFICATIONS_BY_USER : receives
+
+    USERS ||--o{ CLOUD_SAVES_LATEST_BY_USER_GAME : has_latest_save
+    GAMES ||--o{ CLOUD_SAVES_LATEST_BY_USER_GAME : save_for_game
+
+    USERS ||--o{ CLOUD_SAVES_VERSIONS_BY_USER_GAME : has_save_versions
+    GAMES ||--o{ CLOUD_SAVES_VERSIONS_BY_USER_GAME : version_for_game
+
+    ACHIEVEMENTS ||--o{ USER_ACHIEVEMENTS_BY_USER : unlocked_by
+    USERS ||--o{ USER_ACHIEVEMENTS_BY_USER : has_progress
 ```
 
 ---
