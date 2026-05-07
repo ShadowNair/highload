@@ -846,7 +846,6 @@ erDiagram
         _ created_at PK
         _ review_id PK
         _ user_id
-        _ rating
         _ title
         _ body
         _ helpful_count
@@ -862,7 +861,6 @@ erDiagram
         _ created_at PK
         _ review_id PK
         _ game_id
-        _ rating
         _ title
         _ body
         _ helpful_count
@@ -1025,7 +1023,6 @@ erDiagram
 * user_avatar_url
 * game_title
 * game_capsule_url
-* rating
 * helpful_count
 * created_at
 
@@ -1376,7 +1373,7 @@ PRIMARY KEY ((user_id), game_id)
 
 * обе таблицы заполняются синхронно в рамках одной логической операции создания/обновления отзыва;
 * сортировка по `created_at DESC` позволяет быстро отдавать последние отзывы;
-* горячие агрегаты (`rating_avg`, `reviews_count`, `helpful_count`) могут храниться в Redis.
+* горячие агрегаты (`reviews_count`, `helpful_count`) могут храниться в Redis.
 
 #### friends
 
