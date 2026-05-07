@@ -175,7 +175,7 @@ Reviews = 843032/ 40 = 21076
 | Облачное сохранение   |   129 398 400 |       1 498 |       2 397 |
 | Уведомления           |   8 575 342   |          99 |         124 |
 
-У аналога Steam основная серверная боль живет не в JSON API магазина. Store/API-контур для MVP укладывается примерно в 5 тыс. avg RPS и 33 тыс. peak RPS. Настоящий highload начинается на контуре доставки билдов, патчей, кэшей, манифестов и объектов Steam Cloud.
+У аналога Steam основная серверная боль живет не в JSON API магазина. Store/API-контур для MVP укладывается примерно в 5 тыс. avg RPS и 8 тыс. peak RPS. Настоящий highload начинается на контуре доставки билдов, патчей, кэшей, манифестов и объектов Steam Cloud.
 
 ### 2.4 Сетевой трафик
 
@@ -291,12 +291,9 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 
 | Дата-центр/регион | Доля API/core-нагрузки |
 | :---------------: | :--------------------: |
-|      Ashburn      |          ~16%         |
-|       Dallas      |          ~17%         |
-|     Frankfurt     |          ~17%         |
-|       Warsaw      |          ~16%         |
-|     Singapore     |          ~17%         |
-|       Mumbai      |          ~17%         |
+|      Ashburn      |          ~33,3%         |
+|     Frankfurt     |          ~33,3%         |
+|     Singapore     |          ~33,3%         |
 |     **Итого**     |        **100%**        |
 
 | Дата-центр/регион | Доля CDN/download-нагрузки |
@@ -514,7 +511,7 @@ SSL termination выполняется на edge/L7-proxy. Это позволя
 * резервную емкость не менее N+1 для critical pools (auth, checkout, payment, library).
 ### 4.10 Вывод
 
-Для аналога Steam локальная балансировка должна быть построена не как единый прокси-контур “для всего”, а как система из нескольких специализированных слоев:
+Для аналога Steam локальная балансировка должна быть построена не как единый прокси-контур, а как система из нескольких специализированных слоев:
 
 * storefront/API ingress;
 * auth/payment ingress;
@@ -767,58 +764,7 @@ erDiagram
 ---
 
 ### 6.2 Схема физического размещения данных
-```mermaid
-flowchart TB
-    subgraph PG["PostgreSQL 16 + Patroni"]
-        USERS["users"]
-        USER_PROFILES["user_profiles"]
-        USER_WALLET["user_wallet"]
-        WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"]
-        GAMES["games"]
-        GAME_MEDIA_META["game_media_meta"]
-        ACHIEVEMENTS["achievements"]
-    end
-
-    subgraph SCY["ScyllaDB Cluster"]
-        USER_LIBRARY["user_library_by_user"]
-        REVIEWS_GAME["reviews_by_game"]
-        REVIEWS_USER["reviews_by_user"]
-        FRIENDS["friends_by_user"]
-        NOTIFICATIONS["notifications_by_user"]
-        CLOUD_SAVES_META["cloud_saves_meta_by_user_game"]
-        USER_ACHIEVEMENTS["user_achievements_by_user"]
-    end
-
-    subgraph REDIS["Redis Cluster"]
-        SESSIONS["session:{token}"]
-        USER_SESSIONS["user_sessions:{user_id}"]
-        UNREAD["notifications_unread:{user_id}"]
-        HOT_CACHE["hot cache"]
-    end
-
-    subgraph S3["S3 / MinIO"]
-        GAME_MEDIA_FILES["bucket: game-media"]
-        CLOUD_SAVE_FILES["bucket: cloud-saves"]
-    end
-
-    subgraph OS["OpenSearch"]
-        GAMES_INDEX["games_search_index"]
-    end
-
-    USERS --> USER_PROFILES
-    USERS --> USER_WALLET
-    USER_WALLET --> WALLET_TRANSACTIONS
-    GAMES --> GAME_MEDIA_META
-    GAMES --> ACHIEVEMENTS
-
-    GAMES --> USER_LIBRARY
-    GAMES --> REVIEWS_GAME
-    GAMES --> CLOUD_SAVES_META
-    ACHIEVEMENTS --> USER_ACHIEVEMENTS
-
-    GAME_MEDIA_META --> GAME_MEDIA_FILES
-    CLOUD_SAVES_META --> CLOUD_SAVE_FILES
-    GAMES --> GAMES_INDEX
+```mermaid flowchart TB subgraph PG["PostgreSQL 16 + Patroni"] USERS["users"] USER_PROFILES["user_profiles"] USER_WALLET["user_wallet"] WALLET_TRANSACTIONS["wallet_transactions_* (partition by month)"] GAMES["games"] GAME_MEDIA_META["game_media_meta"] ACHIEVEMENTS["achievements"] end subgraph SCY["ScyllaDB Cluster"] USER_LIBRARY["user_library_by_user"] REVIEWS_GAME["reviews_by_game"] REVIEWS_USER["reviews_by_user"] FRIENDS["friends_by_user"] FRIEND_REQUESTS["friend_requests_by_user"] NOTIFICATIONS["notifications_by_user"] CLOUD_SAVES_LATEST["cloud_saves_latest_by_user_game"] CLOUD_SAVES_VERS["cloud_saves_versions_by_user_game"] USER_ACHIEVEMENTS["user_achievements_by_user"] end subgraph REDIS["Redis Cluster"] SESSIONS["session:{token}"] USER_SESSIONS["user_sessions:{user_id}"] PRESENCE["presence:{user_id}"] UNREAD["notifications_unread:{user_id}"] HOT_CACHE["hot cache"] REVIEW_STATS["review_stats:{game_id}"] end subgraph S3["S3 / MinIO"] GAME_MEDIA_FILES["bucket: game-media"] CLOUD_SAVE_FILES["bucket: cloud-saves"] end subgraph OS["OpenSearch"] GAMES_INDEX["games_search_index"] end USERS --> USER_PROFILES USERS --> USER_WALLET USER_WALLET --> WALLET_TRANSACTIONS GAMES --> GAME_MEDIA_META GAMES --> ACHIEVEMENTS GAMES --> USER_LIBRARY GAMES --> REVIEWS_GAME GAMES --> CLOUD_SAVES_LATEST GAMES --> CLOUD_SAVES_VERS ACHIEVEMENTS --> USER_ACHIEVEMENTS GAME_MEDIA_META --> GAME_MEDIA_FILES CLOUD_SAVES_LATEST --> CLOUD_SAVE_FILES CLOUD_SAVES_VERS --> CLOUD_SAVE_FILES GAMES --> GAMES_INDEX
 ```
 
 ---
