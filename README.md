@@ -1272,6 +1272,47 @@ user_achievements_by_user:
 * review_stats:{game_id} — горячие агрегаты отзывов;
 * hot_cache:* — кэш популярных карточек, библиотеки, списков.
 
+#### 6.5.1 Расчет индексов
+Индексация увеличивает объем только в Postgres из выбранных нами хранилищ.
+Расчет производится по формуле:
+S_index ≈ N×(K+16)×1.2
+
+где:
+* N — число строк,
+* K — средний размер индексируемого ключа в байтах,
+* 16 — служебные накладные расходы на index tuple и ссылку на строку,
+* 1.2 — запас на page overhead, fill factor и фрагментацию.
+
+Принятые допущения для расчета
+* UUID / id, user_id, game_id, wallet_id, achievement_id = 16 Б
+* timestamptz = 8 Б
+* email в индексе, средняя длина = 32 Б
+* status в wallet_transactions, средняя длина = 12 Б
+* media_type, средняя длина = 12 Б
+
+| Таблица               | Индекс                                         |     Оценка |
+| --------------------- | ---------------------------------------------- | ---------: |
+| `users`               | `PK(id)`                                       |  ~4.72 GiB |
+| `users`               | `UNIQUE(email)`                                |  ~7.08 GiB |
+| `users`               | `INDEX(last_login)`                            |  ~3.54 GiB |
+| `user_profiles`       | `PK(id)`                                       |  ~4.72 GiB |
+| `user_profiles`       | `UNIQUE(user_id)`                              |  ~4.72 GiB |
+| `user_wallet`         | `PK(id)`                                       |  ~4.72 GiB |
+| `user_wallet`         | `UNIQUE(user_id)`                              |  ~4.72 GiB |
+| `wallet_transactions` | `PK(id)`                                       | ~55.02 GiB |
+| `wallet_transactions` | `INDEX(user_wallet_id, created_at DESC)`       | ~68.78 GiB |
+| `wallet_transactions` | `INDEX(status, created_at DESC)`               | ~61.90 GiB |
+| `games`               | `PK(id)`                                       | ~0.005 GiB |
+| `games`               | `INDEX(release_date DESC) WHERE deleted=false` | ~0.003 GiB |
+| `games`               | `INDEX(updated_at DESC)`                       | ~0.003 GiB |
+| `game_media_meta`     | `PK(id)`                                       | ~0.028 GiB |
+| `game_media_meta`     | `INDEX(game_id, media_type, created_at DESC)`  | ~0.045 GiB |
+| `achievements`        | `PK(id)`                                       | ~0.231 GiB |
+| `achievements`        | `INDEX(game_id)`                               | ~0.231 GiB |
+
+S_sum = 220.5 GiB
+С расчетом на рост:
+S_sum = 240-260 GiB
 ---
 
 ### 6.6 Детализация физической реализации по таблицам
