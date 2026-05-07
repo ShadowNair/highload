@@ -996,7 +996,7 @@ erDiagram
 | `sessions`            | `session:{token}`, `user_sessions:{user_id}`                                                      | Redis Cluster    | key-based access                                                                                       | Сессии всегда читаются по токену или массово удаляются по `user_id`. Реляционная таблица здесь только добавила бы latency и write amplification.                                                          | native Redis sharding по hash slot                                                  | 3 masters + 3 replicas       |
 | `user_wallet`         | `user_wallet`                                                                                     | PostgreSQL       | `PK(id)`, `UNIQUE(user_id)`                                                                            | Один пользователь — один кошелек. Основной read-path: получить кошелек пользователя.                                                                                                                      | без шардинга                                                                        | 1 primary + 2 replicas       |
 | `wallet_transactions` | `wallet_transactions_YYYY_MM`                                                                     | PostgreSQL       | `PK(id)`, `INDEX(user_wallet_id, created_at DESC)`, `INDEX(status, created_at DESC)`                   | История транзакций почти всегда читается по кошельку и по времени; pending/error транзакции удобнее выбирать по `status`.                                                                                 | range partition по `created_at`, помесячно                                          | 1 primary + 2 replicas       |
-| `games`               | `games`                                                                                           | PostgreSQL       | `PK(id)`, `INDEX(release_date DESC)`                                                                   | PostgreSQL — источник истины каталога. Отдельный индекс по `price_cents` не обязателен, так как каталог и фильтры обслуживаются через OpenSearch.                                                         | без шардинга                                                                        | 1 primary + 2 replicas       |
+| `games` | `games` | PostgreSQL | `PK(id)`, `INDEX(release_date DESC) WHERE deleted=false`, `INDEX(updated_at DESC)` | PostgreSQL — источник истины каталога. `release_date` нужен для выборок новых релизов, а `updated_at` — для инкрементальной переиндексации и синхронизации с OpenSearch. Поиск и фильтрация выполняются через OpenSearch, поэтому отдельные индексы по `price_cents`, `genres_json` и `tags_json` не требуются. | без шардинга | 1 primary + 2 replicas |
 | `game_media`          | `game_media_meta` + объекты в `game-media/`                                                       | PostgreSQL + S3  | `PK(id)`, `INDEX(game_id, media_type, created_at)`                                                     | Карточка игры почти всегда читает медиа по `game_id`, иногда отдельно по типу (capsule, screenshot, trailer).                                                                                             | без шардинга, файлы по префиксу `game_id/`                                          | PG replicas + S3 replication |
 | `user_library`        | `user_library_by_user`                                                                            | ScyllaDB         | `PRIMARY KEY ((user_id), game_id)`                                                                     | Главный запрос: “показать библиотеку пользователя”. Partition key = `user_id` позволяет читать библиотеку одной операцией.                                                                                | partition key `user_id`                                                             | RF=3                         |
 | `reviews`             | `reviews_by_game`, `reviews_by_user`                                                              | ScyllaDB         | `PRIMARY KEY ((game_id), created_at, review_id)` + `PRIMARY KEY ((user_id), created_at, review_id)`    | Есть два независимых шаблона чтения: отзывы на странице игры и отзывы конкретного пользователя. Один индекс на нормализованной таблице оба паттерна эффективно не закроет.                                | partition key `game_id` и отдельно `user_id`; clustering order по `created_at DESC` | RF=3                         |
@@ -1354,37 +1354,53 @@ PRIMARY KEY ((user_id), game_id)
 
 Физические таблицы:
 
-1. reviews_by_game
+1. `reviews_by_game`
 
    * PRIMARY KEY ((game_id), created_at, review_id)
 
-2. reviews_by_user
+   Денормализованные поля:
+   * user_display_name
+   * user_avatar_url
+   * game_title
+   * game_capsule_url
+
+2. `reviews_by_user`
 
    * PRIMARY KEY ((user_id), created_at, review_id)
 
+   Денормализованные поля:
+   * game_title
+   * game_capsule_url
+
 Особенности:
 
-* обе таблицы заполняются синхронно из одного события;
-* сортировка по created_at DESC позволяет быстро отдавать последние отзывы;
-* отдельные агрегаты helpful_count, rating_avg, reviews_count можно хранить в кешируемой таблице или Redis.
+* обе таблицы заполняются синхронно в рамках одной логической операции создания/обновления отзыва;
+* сортировка по `created_at DESC` позволяет быстро отдавать последние отзывы;
+* горячие агрегаты (`rating_avg`, `reviews_count`, `helpful_count`) могут храниться в Redis.
 
 #### friends
 
-Физическая таблица:
+Физические таблицы:
 
-PRIMARY KEY ((user_id), friend_id)
+1. `friends_by_user`
 
-Колонки:
+   * PRIMARY KEY ((user_id), friend_id)
 
-* status
-* since_date
-* created_at
+2. `friend_requests_by_user`
+
+   * PRIMARY KEY ((user_id), created_at, friend_id)
+
+Дополнительно в Redis хранится:
+
+* `presence:{user_id}` — online/offline/in-game состояние пользователя
 
 Особенности:
 
-* связи записываются в обе стороны;
-* запрос “список друзей пользователя” читается одной операцией по partition key.
-
+* `friends_by_user` используется для получения списка друзей пользователя;
+* `friend_requests_by_user` используется для отображения входящих заявок;
+* связи друзей записываются в обе стороны;
+* часть данных о друге (`friend_display_name`, `friend_avatar_url`, `last_known_game_title`) денормализуется для ускорения чтения;
+* горячее состояние присутствия хранится отдельно в Redis.
 #### notifications
 
 Физическая таблица:
@@ -1410,11 +1426,15 @@ PRIMARY KEY ((user_id), created_at, notification_id)
 
 Физические сущности:
 
-1. cloud_saves_meta_by_user_game
+1. `cloud_saves_latest_by_user_game`
+
+   * PRIMARY KEY ((user_id, game_id))
+
+2. `cloud_saves_versions_by_user_game`
 
    * PRIMARY KEY ((user_id, game_id), version)
 
-2. объект в bucket: cloud-saves/{user_id}/{game_id}/{version}
+3. объект в bucket: `cloud-saves/{user_id}/{game_id}/{version}`
 
 Колонки метаданных:
 
@@ -1428,6 +1448,8 @@ PRIMARY KEY ((user_id), created_at, notification_id)
 Особенности:
 
 * бинарный blob не хранится в БД;
+* `cloud_saves_latest_by_user_game` используется для быстрого получения актуального сохранения;
+* `cloud_saves_versions_by_user_game` хранит историю версий для откатов и разрешения конфликтов;
 * checksum используется для проверки целостности;
 * новые версии добавляются append-only.
 
@@ -1460,7 +1482,7 @@ PRIMARY KEY ((user_id), game_id, achievement_id)
 
 ---
 
-### 6.6 Балансировка запросов и мультиплексирование подключений
+### 6.7 Балансировка запросов и мультиплексирование подключений
 
 | Хранилище     | Балансировка запросов                                  | Мультиплексирование подключений        |
 | ------------- | ------------------------------------------------------ | -------------------------------------- |
@@ -1472,7 +1494,7 @@ PRIMARY KEY ((user_id), game_id, achievement_id)
 
 ---
 
-### 6.7 Клиентские библиотеки и интеграции
+### 6.8 Клиентские библиотеки и интеграции
 
 Если backend реализуется на Go, используются следующие библиотеки:
 
@@ -1495,7 +1517,7 @@ PRIMARY KEY ((user_id), game_id, achievement_id)
 
 ---
 
-### 6.8 Схема резервного копирования
+### 6.9 Схема резервного копирования
 
 | Хранилище  | Схема бэкапа                                                                    |
 | ---------- | ------------------------------------------------------------------------------- |
@@ -1507,15 +1529,15 @@ PRIMARY KEY ((user_id), game_id, achievement_id)
 
 ---
 
-### 6.9 Итоговое распределение таблиц по хранилищам
+### 6.10 Итоговое распределение таблиц по хранилищам
 
-| Хранилище     | Таблицы / сущности                                                                                                                                                     |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL    | users, user_profiles, user_wallet, wallet_transactions, games, game_media_meta, achievements                                                             |
-| ScyllaDB      | user_library_by_user, reviews_by_game, reviews_by_user, friends_by_user, notifications_by_user, cloud_saves_meta_by_user_game, user_achievements_by_user |
-| Redis Cluster | session:{token}, user_sessions:{user_id}, notifications_unread:{user_id}, hot cache                                                                              |
-| S3 / MinIO    | game-media, cloud-saves                                                                                                                                            |
-| OpenSearch    | games_search_index                                                                                                                                                   |
+| Хранилище | Таблицы / сущности |
+|---|---|
+| PostgreSQL | `users`, `user_profiles`, `user_wallet`, `wallet_transactions`, `games`, `game_media_meta`, `achievements` |
+| ScyllaDB | `user_library_by_user`, `reviews_by_game`, `reviews_by_user`, `friends_by_user`, `friend_requests_by_user`, `notifications_by_user`, `cloud_saves_latest_by_user_game`, `cloud_saves_versions_by_user_game`, `user_achievements_by_user` |
+| Redis Cluster | `session:{token}`, `user_sessions:{user_id}`, `presence:{user_id}`, `notifications_unread:{user_id}`, `review_stats:{game_id}`, `hot_cache:*` |
+| S3 / MinIO | `game-media`, `cloud-saves` |
+| OpenSearch | `games_search_index` |
 
 ---
 
