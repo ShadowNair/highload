@@ -86,7 +86,7 @@ pie title ⚧ Гендерный состав аудитории
 
 Принятые обозначения:
 * T_day = 86400 секунд в сутки
-* k_day = 24/4 = 6 - коэффициент внутрисуточного пика
+* k_day = 1.25 - коэффициент внутрисуточного пика
 * k_sale = 7.46/5.85 = 1.275 - коэффициент сезонного store-пика
 * k_store = k_day * k_sale = 7.65 = 8
 
@@ -159,20 +159,21 @@ Reviews = 843032/ 40 = 21076
 
 Пиковые коэффициенты приняты так:
 
-* внутрисуточный пик х6, так как основная часть активности происходит примерно в 4 часа из суток[2](https://icon-era.com/statistics/steam/)
-* для ручек покупок есть еще сезонный коэффициент 7.46/ 5.85 = 1.275 * 6 = x8 [3](https://www.envive.ai/post/add-to-cart-rate-statistics?utm_source=chatgpt.com)
+* внутрисуточный пик х1.25, рассчитана путем отношения максимального количества активных пользоателей за 5-ое мая к среднему количеству [2](https://steamdb.info/charts/)
+![Активные игроки на 5-ое мая](img/ActiveUser.png)
+* для ручек покупок есть еще сезонный коэффициент 7.46/ 5.85 = 1.275 * 1.25 = x1.6 [3](https://www.envive.ai/post/add-to-cart-rate-statistics?utm_source=chatgpt.com)
 
-| Метод                   | Действий в день | Средний RPS | Пиковый RPS |
-| ----------------------- | --------------: | ----------: | ----------: |
-| Поиск   |      68 375 309 |         791 |       6 331 |
-| Страница игр        |      46 637 007 |         540 |       4 318 |
-| Библиотека          |      124 200 000 |         1 438 |       8 625 |
-| Авторизация     |      51 257 143 |         593 |       3 560 |
-| Корзина |       2 830 866 |          33 |         262 |
-| Платежи |         843 032 |          10 |          78 |
-| Отзывы         |          21 076 |        0.24 |         2 |
-| Облачное сохранение  |      129 398 400 |         1 498 |       8 988 |
-| Уведомления | 8 575 342 | 99 | 596|
+| Метод | Действий в день | Средний RPS | Пиковый RPS |
+|:--:|:--:|:--:|:--:|
+| Поиск                 |68 375 309     |         791 |       1 265 |
+| Страница игр          |   46 637 007  |         540 |       864   |
+| Библиотека            |   124 200 000 |       1 438 |       2 301 |
+| Авторизация           |   51 257 143  |         593 |       741   |
+| Корзина               |   2 830 866   |          33 |         53  |
+| Платежи               |   843 032     |          10 |          16 |
+| Отзывы                |   21 076      |        0.24 |         0.4 |
+| Облачное сохранение   |   129 398 400 |       1 498 |       2 397 |
+| Уведомления           |   8 575 342   |          99 |         124 |
 
 У аналога Steam основная серверная боль живет не в JSON API магазина. Store/API-контур для MVP укладывается примерно в 5 тыс. avg RPS и 33 тыс. peak RPS. Настоящий highload начинается на контуре доставки билдов, патчей, кэшей, манифестов и объектов Steam Cloud.
 
@@ -199,25 +200,24 @@ Traffic_cloud = 100 * 10^18 * 8 / 365 / 24 / 3600 = 25.37 Tbps
 
 Для расчитанных ранее нагрузок:
 
-Traffic_search(avg) = 791 * 14276 * 8/1024^3 = 0,084 Gbps
+Traffic_search(avg) = 791 * 14233 * 8/1024^3 = 0,084 Gbps
 
-Traffic_search(peek) = 6331⋅14276⋅8/1024^3 = 0.673 Gbps
+Traffic_search(peek) = 1 265⋅14 233⋅8/1024^3 = 0.134 Gbps
 
 ...
 
 |Тип трафика|Размер ответа|Средний|Пиковый|
 |:--:|:--:|:--:|:--:|
-|Каталог и листинг игр|13.9 KiB|	0.084 Gbps|	0.673 Gbps|
-|Карточки игр|8.1 KiB|	0.034 Gbps|	0.268 Gbps|
-|Авторизация|1.05 |	0.024 Gbps|	0.142 Gbps|
-|Библиотека|	0.575 Gbps|	3.45 Gbps|
-|Checkout + payment|	0.0027 Gbps|	0.0218 Gbps|
-|Reviews|	0.000008 Gbps|	0.000047 Gbps|
-|Уведомления|	0.0079 Gbps|	0.0476 Gbps|
-|Cloud save|	59.91 Gbps|	359.44 Gbps|
-|Storefront/API без cloud save|	0.527 Gbps|	3.395 Gbps|
-|Storefront/API с cloud save|	81.81 Gbps|	533.49 Gbps|
-|Скачивание игр и обновлений|	25.37 Tbps|	48.8 Tbps|
+|Каталог и листинг игр|13.9 KiB|	0.084 Gbps|	0.134 Gbps|
+|Карточки игр|8.1 KiB|	0.033 Gbps|	0.053 Gbps|
+|Авторизация|1.05 KiB|	0.005 Gbps|	0.006 Gbps|
+|Библиотека|36.1 KiB|	0.396 Gbps|	0.631 Gbps|
+|Checkout + payment|1 KiB|	0.0003 Gbps|	0.0005 Gbps|
+|Reviews|1.48 KiB|	0.000003 Gbps|	0.000005 Gbps|
+|Уведомления|5.4 KiB|	0.004 Gbps|	0.005 Gbps|
+|Cloud save|0.34 KiB|	0.004 Gbps|	0.006 Gbps|
+|Суммарно||0.53 Gbps|0.84 Gbps|
+|Скачивание игр и обновлений||	25.37 Tbps|	48.8 Tbps|
 
 Из расчётов видно, что даже с учётом cloud save основной объём сетевой нагрузки для сервиса класса Steam создаёт не storefront/API, а именно контур доставки контента. Поэтому при проектировании инфраструктуры необходимо физически и логически разделять application traffic и delivery traffic: использовать отдельные слои балансировки, отдельные пулы серверов и отдельные стратегии кеширования.
 
@@ -291,26 +291,24 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 
 | Дата-центр/регион | Доля API/core-нагрузки |
 | :---------------: | :--------------------: |
-|      Ashburn      |          12.5%         |
-|       Dallas      |          12.5%         |
-|     Frankfurt     |          12.5%         |
-|       Warsaw      |          12.5%         |
-|     Singapore     |          12.5%         |
-|       Mumbai      |          12.5%         |
-|       Tokyo       |          12.5%         |
-|     São Paulo     |          12.5%         |
+|      Ashburn      |          ~16%         |
+|       Dallas      |          ~17%         |
+|     Frankfurt     |          ~17%         |
+|       Warsaw      |          ~16%         |
+|     Singapore     |          ~17%         |
+|       Mumbai      |          ~17%         |
 |     **Итого**     |        **100%**        |
 
 | Дата-центр/регион | Доля CDN/download-нагрузки |
 | :---------------: | :------------------------: |
-|      Ashburn      |            12.5%           |
-|       Dallas      |            12.5%           |
-|     Frankfurt     |            12.5%           |
-|       Warsaw      |            12.5%           |
-|     Singapore     |            12.5%           |
-|       Mumbai      |            12.5%           |
-|       Tokyo       |            12.5%           |
-|     São Paulo     |            12.5%           |
+|      Ashburn      |            ~12.4%           |
+|       Dallas      |            ~13.4%           |
+|     Frankfurt     |            ~12.5%           |
+|       Warsaw      |            ~11.5%           |
+|     Singapore     |            ~12.4%           |
+|       Mumbai      |            ~15%           |
+|       Tokyo       |            ~15%           |
+|     São Paulo     |            ~7.8%           |
 |     **Итого**     |          **100%**          |
 
 
@@ -320,7 +318,7 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 |     steam.example.com    |          API/core         |    Latency-based DNS + health checks    |
 |   api.steam.example.com  |          API/core         |  Latency-based DNS + weighted failover  |
 | static.steam.example.com |        CDN/download       |            GeoDNS + CDN cache           |
-|   cdn.steam.example.com  |        CDN/download       |          GeoDNS + anycast edge          |
+|   cdn.steam.example.com  |        CDN/download       |          GeoDNS + anycast       |
 |  cloud.steam.example.com | API/core + object storage | Latency-based DNS + regional stickiness |
 
 
@@ -332,7 +330,7 @@ GeoDNS + anycast edge используется для cdn, потому что �
 | Основной регион | Резервный регион | Второй резерв |
 | :-------------: | :--------------: | :-----------: |
 |     Ashburn     |      Dallas      |   Frankfurt   |
-|      Dallas     |      Ashburn     |   São Paulo   |
+|      Dallas     |      Ashburn     |  |
 |    Frankfurt    |      Warsaw      |    Ashburn    |
 |      Warsaw     |     Frankfurt    |   Singapore   |
 |    Singapore    |       Tokyo      |     Mumbai    |
@@ -542,6 +540,7 @@ erDiagram
         _ status
         _ region
         _ preferences_json
+        _ deleted
     }
     USER_PROFILES {
         _ id PK
