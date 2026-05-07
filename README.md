@@ -943,6 +943,42 @@ erDiagram
         _ updated_at
     }
 
+        REDIS_SESSIONS {
+        _ session_token PK
+        _ user_id
+        _ device_info
+        _ ip_address
+        _ created_at
+        _ expires_at
+    }
+
+    REDIS_PRESENCE {
+        _ user_id PK
+        _ status
+        _ last_seen
+        _ current_game_id
+    }
+
+    REDIS_NOTIFICATIONS_UNREAD {
+        _ user_id PK
+        _ unread_count
+        _ updated_at
+    }
+
+    GAMES_SEARCH_INDEX {
+        _ game_id PK
+        _ title
+        _ developer
+        _ publisher
+        _ genres
+        _ tags
+        _ price
+        _ deleted
+        _ capsule_image_url
+        _ reviews_count
+        _ release_date
+    }
+
     USERS ||--|| USER_PROFILES : has
     USERS ||--|| USER_WALLET : has
     USER_WALLET ||--o{ WALLET_TRANSACTIONS : has
@@ -969,6 +1005,12 @@ erDiagram
 
     ACHIEVEMENTS ||--o{ USER_ACHIEVEMENTS_BY_USER : unlocked_by
     USERS ||--o{ USER_ACHIEVEMENTS_BY_USER : has_progress
+    GAMES ||--o{ REVIEWS_BY_GAME : receives
+    USERS ||--o{ REDIS_SESSIONS : has
+    USERS ||--|| REDIS_PRESENCE : has
+    USERS ||--|| REDIS_NOTIFICATIONS_UNREAD : has
+
+    GAMES ||--|| GAMES_SEARCH_INDEX : indexed_as
 ```
 
 ---
