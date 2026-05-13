@@ -78,11 +78,11 @@ pie title ⚧ Гендерный состав аудитории
 
 Дальше все расчеты опираются на следующие публичные показатели платформы и смежные ecommerce-бенчмарки:
 
-* Steam указывает, что платформа имеет более 132 млн MAU. В открытых агрегированных оценках для 2025 года также используются 69 млн DAU и отношение DAU/MAU = 52,27%.[1](https://icon-era.com/statistics/steam/) Выручка Steam за 2024 год оценивается в 10,8 млрд долларов, при этом на долю 10 лучших релизов 2023 года пришлось 61% от общего дохода, полученного от новых игр.[2](https://sensortower.com/blog/global-pc-games-market-report-2024) Средняя цена игр в топ-50 Steam по количеству проданных копий к октябрю 2025 года составляет 21,41 доллара. [1](https://partner.steamgames.com/?redir=country.php%3FcountryCode%3DCN%26dateStart%3D2024-08-16%26dateEnd%3D2024-08-22&utm_source=chatgpt.com)
-* Для расчета воронки магазина используются следующие ecommerce-метрики. Средний conversion rate в сегменте Toys, Games & Collectables в феврале 2026 года составляет 1,86%. Средний глобальный add-to-cart rate составляет 6,07%. Средний documented cart abandonment rate равен 70,22%. Среднее число страниц за ecommerce-сессию составляет 2,6. Для оценки сезонного пика store-нагрузки используется рост add-to-cart rate с 5,85% в июле 2025 года до 7,46% в ноябре 2024 года, что дает дополнительный коэффициент 1,275. [2](https://www.irpcommerce.com/en/us/ecommercemarketdata.aspx?Market=19)
-* Для оценки пользовательского поведения используются внешние агрегированные данные по Steam: 5,2 логина в неделю на пользователя, 1,4 часа на сессию и 1,8 запущенной игры на один DAU. Кроме того, Steam сообщает, что пик активности приходится на окно 19:00-23:00, то есть на 4 часа в сутки.[3](https://sqmagazine.co.uk/steam-statistics/)
-* Для cloud save используется доля игр с поддержкой Steam Cloud. По данным SteamDB, в каталоге сейчас 67 225 игр с признаком Steam Cloud. Открытые оценки общего числа игр на платформе дают 128 950 тайтла, значит доля cloud-enabled игр составляет 53,6%. В проектной модели принимается 2 cloud sync-операции на игровую сессию: чтение при запуске и запись при завершении. Сам Steam Cloud официально описан как механизм хранения и синхронизации пользовательских файлов на серверах Steam.[4](https://steamdb.info/instantsearch/)
-* Для уведомлений используется официальная статистика Steam Events. Valve указала, что за 2025 год разработчики опубликовали 436 592 Steam Events, которые суммарно дали 3,13 млрд player views. Это подходит как нижняя оценка нагрузки на чтение продуктовых уведомлений и событийной ленты.[5](https://steamcommunity.com/groups/steamworks/announcements/detail/528746884222682053)
+* Steam указывает, что платформа имеет более 132 млн MAU. В открытых агрегированных оценках для 2025 года также используются 69 млн DAU и отношение DAU/MAU = 52,27%.[1](https://icon-era.com/statistics/steam/) Выручка Steam за 2024 год оценивается в 10,8 млрд долларов, при этом на долю 10 лучших релизов 2023 года пришлось 61% от общего дохода, полученного от новых игр.[2](https://sensortower.com/blog/global-pc-games-market-report-2024) Средняя цена игр в топ-50 Steam по количеству проданных копий к октябрю 2025 года составляет 21,41 доллара. [3](https://partner.steamgames.com/?redir=country.php%3FcountryCode%3DCN%26dateStart%3D2024-08-16%26dateEnd%3D2024-08-22&utm_source=chatgpt.com)
+* Для расчета воронки магазина используются следующие ecommerce-метрики. Средний conversion rate в сегменте Toys, Games & Collectables в феврале 2026 года составляет 1,86%. Средний глобальный add-to-cart rate составляет 6,07%. Средний documented cart abandonment rate равен 70,22%. Среднее число страниц за ecommerce-сессию составляет 2,6. Для оценки сезонного пика store-нагрузки используется рост add-to-cart rate с 5,85% в июле 2025 года до 7,46% в ноябре 2024 года, что дает дополнительный коэффициент 1,275. [4](https://www.irpcommerce.com/en/us/ecommercemarketdata.aspx?Market=19)
+* Для оценки пользовательского поведения используются внешние агрегированные данные по Steam: 5,2 логина в неделю на пользователя, 1,4 часа на сессию и 1,8 запущенной игры на один DAU. Кроме того, Steam сообщает, что пик активности приходится на окно 19:00-23:00, то есть на 4 часа в сутки.[5](https://sqmagazine.co.uk/steam-statistics/)
+* Для cloud save используется доля игр с поддержкой Steam Cloud. По данным SteamDB, в каталоге сейчас 67 225 игр с признаком Steam Cloud. Открытые оценки общего числа игр на платформе дают 128 950 тайтла, значит доля cloud-enabled игр составляет 53,6%. В проектной модели принимается 2 cloud sync-операции на игровую сессию: чтение при запуске и запись при завершении. Сам Steam Cloud официально описан как механизм хранения и синхронизации пользовательских файлов на серверах Steam.[6](https://steamdb.info/instantsearch/)
+* Для уведомлений используется официальная статистика Steam Events. Valve указала, что за 2025 год разработчики опубликовали 436 592 Steam Events, которые суммарно дали 3,13 млрд player views. Это подходит как нижняя оценка нагрузки на чтение продуктовых уведомлений и событийной ленты.[7](https://steamcommunity.com/groups/steamworks/announcements/detail/528746884222682053)
 
 Принятые обозначения:
 * T_day = 86400 секунд в сутки
@@ -159,9 +159,9 @@ Reviews = 843032/ 40 = 21076
 
 Пиковые коэффициенты приняты так:
 
-* внутрисуточный пик х1.25, рассчитана путем отношения максимального количества активных пользоателей за 5-ое мая к среднему количеству [2](https://steamdb.info/charts/)
+* внутрисуточный пик х1.25, рассчитана путем отношения максимального количества активных пользоателей за 5-ое мая к среднему количеству [8](https://steamdb.info/charts/)
 ![Активные игроки на 5-ое мая](img/ActiveUser.png)
-* для ручек покупок есть еще сезонный коэффициент 7.46/ 5.85 = 1.275 * 1.25 = x1.6 [3](https://www.envive.ai/post/add-to-cart-rate-statistics?utm_source=chatgpt.com)
+* для ручек покупок есть еще сезонный коэффициент 7.46/ 5.85 = 1.275 * 1.25 = x1.6 [9](https://www.envive.ai/post/add-to-cart-rate-statistics)
 
 | Метод | Действий в день | Средний RPS | Пиковый RPS |
 |:--:|:--:|:--:|:--:|
@@ -270,24 +270,24 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 Скриншоты, трейлеры, depot-объекты, игровые билды, патчи и прочие крупные бинарные данные.
 * Облачные сохранения - cloud.steam.example.com
 Синхронизация Steam Cloud-подобных файлов сохранения и их метаданных.
-Такое разбиение оправдано тем, что сама Steam работает как глобально распределенная система с 400+ distributed servers worldwide и 1TB fiber backbone, а официальный Steam Download Stats показывает отдельные крупные контуры нагрузки по регионам Asia, Europe, North America, South America и Russia/CIS.[6](https://www.steamgames.com/steamworks/ov_cloud.php?ref=stebet.net&utm_source=chatgpt.com)
+Такое разбиение оправдано тем, что сама Steam работает как глобально распределенная система с 400+ distributed servers worldwide и 1TB fiber backbone, а официальный Steam Download Stats показывает отдельные крупные контуры нагрузки по регионам Asia, Europe, North America, South America и Russia/CIS.[9](https://www.steamgames.com/steamworks/ov_cloud.php?ref=stebet.net&utm_source=chatgpt.com)
 ### Расположение дата-центров
 Для аналога стим следует разделить инфраструктуру на:
 * core-регионы
 * edge/download-регионы 
 Мы будем размещать edge/download там же, где core, так как будет находиться рядом с крутыми сетевыми хабами.
 #### Северная Америка
-* Ashburn (US East) - основной регион для storefront/API в Северной Америке. Выбор обусловлен тем, что Ашберн находится в крупнейшем мировом рынке дата-центров и имеет очень высокую плотность волоконной связности. Это хороший базовый регион для control plane и платежного контура.[7](https://services.global.ntt/en-us/services-and-products/global-data-centers/global-locations/americas/ashburn-data-centers?utm_source=chatgpt.com)
+* Ashburn (US East) - основной регион для storefront/API в Северной Америке. Выбор обусловлен тем, что Ашберн находится в крупнейшем мировом рынке дата-центров и имеет очень высокую плотность волоконной связности. Это хороший базовый регион для control plane и платежного контура.[10](https://services.global.ntt/en-us/services-and-products/global-data-centers/global-locations/americas/ashburn-data-centers)
 * Dallas (US Central) - резервный регион для Северной Америки и точка диверсификации относительно US East. Здесь ставка делается на географическое разнесение и более устойчивое аварийное переключение внутри континента.
 #### Европа
-* Frankfurt - основной европейский регион. Франкфурт является одним из крупнейших интернет-хабов мира: DE-CIX Frankfurt называет себя ведущим в мире, с пиковым трафиком 18+ Tbps и доступом к 1000+ сетям. Это логичный выбор для европейского storefront/API и части origin-трафика.[8](https://www.de-cix.net/en/locations/frankfurt?utm_source=chatgpt.com)
-* Warsaw - резервный европейский регион и точка покрытия Восточной Европы и части трафика Russia/CIS. Equinix называет Варшаву major interconnection gateway to eastern Europe, а локальные IX в Польше дают хороший задел под regional edge и резерв storefront/API.[9](https://www.equinix.com/data-centers/europe-colocation/poland-colocation/warsaw-data-centers?utm_source=chatgpt.com)
+* Frankfurt - основной европейский регион. Франкфурт является одним из крупнейших интернет-хабов мира: DE-CIX Frankfurt называет себя ведущим в мире, с пиковым трафиком 18+ Tbps и доступом к 1000+ сетям. Это логичный выбор для европейского storefront/API и части origin-трафика.[11](https://www.de-cix.net/en/locations/frankfurt)
+* Warsaw - резервный европейский регион и точка покрытия Восточной Европы и части трафика Russia/CIS. Equinix называет Варшаву major interconnection gateway to eastern Europe, а локальные IX в Польше дают хороший задел под regional edge и резерв storefront/API.[12](https://www.equinix.com/data-centers/europe-colocation/poland-colocation/warsaw-data-centers)
 #### Азия
-* Singapore - основной APAC-регион. SGIX работает как распределенная peering-сеть в крупных дата-центрах в Сингапуре и позиционируется как один из крупнейших открытых и нейтральных интернет-обменников Азии. Для глобального игрового сервиса это удобная точка для Юго-Восточной Азии и части островных государств.[10](https://www.sgix.sg/about-us-2/?utm_source=chatgpt.com)
-* Mumbai - второй азиатский регион. DE-CIX India указывает, что в Мумбаи подключено 407 сетей, а сам узел уже проходил отметку 1 Tbps пропускная способность и продолжал наращивать емкость. Это делает Мумбаи хорошей точкой для Южной Азии и части ближневосточного трафика.[11](https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/?utm_source=chatgpt.com)
-* Tokyo - то первый коммерческий IX Японии, один из крупнейших по числу клиентов и важная часть интернет-инфраструктуры Японии.[12](https://www.jpix.ad.jp/en/?utm_source=chatgpt.com)
+* Singapore - основной APAC-регион. SGIX работает как распределенная peering-сеть в крупных дата-центрах в Сингапуре и позиционируется как один из крупнейших открытых и нейтральных интернет-обменников Азии. Для глобального игрового сервиса это удобная точка для Юго-Восточной Азии и части островных государств.[13](https://www.sgix.sg/about-us-2/)
+* Mumbai - второй азиатский регион. DE-CIX India указывает, что в Мумбаи подключено 407 сетей, а сам узел уже проходил отметку 1 Tbps пропускная способность и продолжал наращивать емкость. Это делает Мумбаи хорошей точкой для Южной Азии и части ближневосточного трафика.[14](https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/)
+* Tokyo - то первый коммерческий IX Японии, один из крупнейших по числу клиентов и важная часть интернет-инфраструктуры Японии.[15](https://www.jpix.ad.jp/en/)
 #### Южная Америка
-* São Paulo - основной южноамериканский регион. IX.br и NIC.br прямо указывают, что São Paulo является глобальным лидером по объему трафика обмена и в 2026 году достигал 32 Tbps на локальном PTT. Для континента это очевидная точка размещения core edge/download-инфраструктуры.[12](https://nic.br/noticia/releases/ix-br-hits-record-50-tbit-s-of-aggregated-internet-traffic-driven-by-content-and-digital-services/?utm_source=chatgpt.com)
+* São Paulo - основной южноамериканский регион. IX.br и NIC.br прямо указывают, что São Paulo является глобальным лидером по объему трафика обмена и в 2026 году достигал 32 Tbps на локальном PTT. Для континента это очевидная точка размещения core edge/download-инфраструктуры.[16](https://nic.br/noticia/releases/ix-br-hits-record-50-tbit-s-of-aggregated-internet-traffic-driven-by-content-and-digital-services/)
 
 | Дата-центр/регион | Доля API/core-нагрузки |
 | :---------------: | :--------------------: |
@@ -354,7 +354,7 @@ JS/CSS, иконки, мелкие изображения, конфигурац�
 
 NGINX официально поддерживает upstream load balancing, параметры backup, down, а также keepalive для повторного использования idle-соединений к backend-серверам. Это позволяет снижать накладные расходы на установку соединений и уменьшать нагрузку на application-пул. [13](nginx.org)
 
-В качестве основного алгоритма балансировки storefront/API предлагается использовать least request. Envoy в официальной документации указывает, что weighted least request учитывает число активных запросов на инстансе и уменьшает вероятность неравномерной перегрузки отдельных узлов. Для контуров с неоднородной задержкой, таких как product page, library и search, это лучше, чем обычный round robin. [14](envoyproxy.io)
+В качестве основного алгоритма балансировки storefront/API предлагается использовать least request. Envoy в официальной документации указывает, что weighted least request учитывает число активных запросов на инстансе и уменьшает вероятность неравномерной перегрузки отдельных узлов. Для контуров с неоднородной задержкой, таких как product page, library и search, это лучше, чем обычный round robin. [17](envoyproxy.io)
 
 ### 4.3 Функциональное деление backend-пулов
 
@@ -401,7 +401,7 @@ NGINX официально поддерживает upstream load balancing, п�
 * сохранение cache locality;
 * минимизацию обращений к origin;
 * возможность быстрого исключения деградировавших cache/origin-инстансов;
-* поддержку keep-alive и reuse соединений к upstream. [12](nginx.org)
+* поддержку keep-alive и reuse соединений к upstream. [18](nginx.org)
 
 Для ingress download-контура разумно использовать:
 
@@ -450,7 +450,7 @@ SSL termination выполняется на edge/L7-proxy. Это позволя
 * эффективно работать с HTTP/2 и HTTP/3;
 * уменьшить количество полных handshake-операций.
 
-Между прокси и backend используются keep-alive соединения. NGINX официально поддерживает keepalive connections к upstream-серверам, а в новых версиях эта функциональность включена по умолчанию. Для Steam-подобной системы с большим числом коротких read-запросов это уменьшает сетевой overhead и сокращает задержку на повторные обращения. [12](nginx.org)
+Между прокси и backend используются keep-alive соединения. NGINX официально поддерживает keepalive connections к upstream-серверам, а в новых версиях эта функциональность включена по умолчанию. Для Steam-подобной системы с большим числом коротких read-запросов это уменьшает сетевой overhead и сокращает задержку на повторные обращения. [18](nginx.org)
 
 ### 4.8 API Gateway
 
@@ -2233,12 +2233,120 @@ Checkout / Payment Service, Kafka / Redpanda, Library Service, Notification Serv
 
 На схеме синхронные взаимодействия обозначены сплошными стрелками и соответствуют request-response вызовам между клиентом, API Gateway, микросервисами и их основными хранилищами. Асинхронные взаимодействия обозначены пунктирными стрелками и реализуются через Kafka. В проекте используются два асинхронных паттерна: Publish/Subscribe для распространения бизнес-событий (order.paid, review.created) и Queue/Worker для фоновой обработки задач отправки уведомлений (notification.send).
 
+## 11. Выбор оборудования и хостинга
+### 11.1 Таблица оборудования
+| Контур                     | Провайдер / тариф    | Кол-во | Конфигурация | Диски на сервер                | Месячная стоимость |
+| -------------------------- | -------------------- | -----: | ------------ | ------------------------------ | -----------------: |
+| Edge / API ingress         | OVHcloud `Game-1`    |      6 | 8c / 64 GB   | 2 × 960 GB NVMe                |               $996 |
+| Kubernetes worker nodes    | OVHcloud `Advance-4` |      9 | 16c / 64 GB  | 2 × 960 GB NVMe                |             $2,556 |
+| PostgreSQL cluster         | OVHcloud `Advance-4` |      3 | 16c / 64 GB  | 2 × 960 GB NVMe RAID1          |               $852 |
+| ScyllaDB cluster           | OVHcloud `Advance-4` |      3 | 16c / 64 GB  | 2 × 960 GB + 2 × 15.36 TB NVMe |               $918 |
+| Redis Cluster              | OVHcloud `Game-1`    |      6 | 8c / 64 GB   | 2 × 960 GB NVMe                |               $996 |
+| OpenSearch                 | OVHcloud `Game-1`    |      3 | 8c / 64 GB   | 2 × 960 GB NVMe                |               $498 |
+| Kafka / Redpanda           | OVHcloud `Advance-4` |      3 | 16c / 64 GB  | 2 × 960 GB NVMe                |               $852 |
+| ClickHouse                 | OVHcloud `Advance-4` |      3 | 16c / 64 GB  | 2 × 960 GB NVMe                |               $852 |
+| Monitoring / utility nodes | OVHcloud `Game-1`    |      3 | 8c / 64 GB   | 2 × 960 GB NVMe                |               $498 |
 
+Итого по core-инфраструктуре: $9,018/мес.
+У OVHcloud на эти же серверы есть и разовый installation fee, который по этим конфигурациям получается еще примерно $9,018 сверху в месяц запуска[19](https://www.ovhcloud.com/en/bare-metal/prices/).
+
+#### Почему именно столько серверов
+Количество серверов определяется в первую очередь:
+
+* размещением минимум в 3 core-регионах;
+* схемой N+1 и отдельными пулами под stateful-компоненты;
+* необходимостью держать базы и брокеры отдельно от stateless-приложений;
+* требованием не смешивать платежи, каталог, библиотеку и инфраструктурные сервисы на одной куче узлов.
+
+### 11.2 Расчет дисков и объектного хранения
+#### 11.2.1 Локальные NVMe-диски на серверах
+
+По server-level storage:
+
+Game-1: 18 серверов × 2 × 960 GB = 34.56 TB raw NVMe
+Advance-4 без расширения: 18 серверов × 2 × 960 GB = 34.56 TB raw NVMe
+ScyllaDB узлы: 3 сервера × (2 × 960 GB + 2 × 15.36 TB) = 97.92 TB raw NVMe
+
+Суммарно локального дискового пространства: ≈ 167.04 TB raw NVMe.
+
+Этого более чем достаточно для:
+
+* PostgreSQL + WAL + запас на рост;
+* Kafka retention;
+* ClickHouse hot analytics;
+* Redis AOF/RDB;
+* ScyllaDB с replication factor = 3;
+* локального кэша и служебных данных.
+#### 11.2.2 Объектное хранилище
+
+Steam Cloud при хранении текущей и предыдущей версии: ≈ 1.282 PiB
+game_media: ≈ 6.79 TiB
+
+Итого для object storage:
+
+≈ 1.289 PiB полезных объектов.
+
+Если оценивать это по официальной цене Backblaze B2 $6.95 / TB-month, то ежемесячная стоимость хранения составит примерно[20](https://www.backblaze.com/cloud-storage/transaction-pricing):
+S_object≈1319.6 TiB×6.95≈9171.9 USD/month
+
+### 11.3 Стоимость аренды
+| Статья                                             | Стоимость в месяц |
+| -------------------------------------------------- | ----------------: |
+| Core / compute / DB / queues / search / monitoring |            $9,018 |
+| Object storage (Steam Cloud + media)               |            $9,172 |
+| **Итого без enterprise CDN**                       | **$18,190 / мес** |
+
+Cost_5y​=60×18190+9018≈1,100,418 USD
+
+### 11.4 Стоимость своего железа
+Для оценки берем Broadberry:
+
+* сервер CyberServe EPYC EP1 102-G NVMe G5 стартует от £5,596;
+* более storage-heavy вариант CyberServe EPYC EP1 112-12NVMe-G G5Q стартует от £8,191.
+
+Если принять эквивалент нашей схемы как:
+
+36 обычных серверов по £5,596
+3 storage-heavy сервера по £8,191
+
+то сумма будет:
+
+36×5596+3×8191=226029 GBP
+
+По курсу 1 GBP = 1.3625 USD это:
+
+226029×1.3625≈307965 USD
+
+или ≈ $308 тыс. upfront.
+
+Если просто амортизировать это на 60 месяцев:
+
+307965/60≈5133 USD/month
+
+Если заложить еще 10% в год на спары, замену железа и поддержку, получится примерно:
+
+5133+2566≈7699 USD/month
+
+#### Выгоднее покупать свое железо
 
 ## Источники данных
-- https://steamdb.info/app/753/charts
-- https://steamdb.info/app/753/charts/#max(для выяснения регистрации и авторизации)
-- https://icon-era.com/statistics/steam-game-statistics/
-- https://worldpopulationreview.com/country-rankings/steam-users-by-country
-- https://store.steampowered.com/stats/stats(офф сайт: пользователей залогинино)
-- 
+1. https://icon-era.com/statistics/steam/
+2. https://sensortower.com/blog/global-pc-games-market-report-2024
+3. https://partner.steamgames.com/?redir=country.php%3FcountryCode%3DCN%26dateStart%3D2024-08-16%26dateEnd%3D2024-08-22&utm_source=chatgpt.com
+4. https://www.irpcommerce.com/en/us/ecommercemarketdata.aspx?Market=19
+5. https://sqmagazine.co.uk/steam-statistics/
+6. https://steamdb.info/instantsearch/
+7. https://steamcommunity.com/groups/steamworks/announcements/detail/528746884222682053
+8. https://steamdb.info/charts/
+9. https://www.steamgames.com/steamworks/ov_cloud.php?ref=stebet.net&utm_source=chatgpt.com
+10. https://services.global.ntt/en-us/services-and-products/global-data-centers/global-locations/americas/ashburn-data-centers
+11. https://www.de-cix.net/en/locations/frankfurt
+12. https://www.equinix.com/data-centers/europe-colocation/poland-colocation/warsaw-data-centers
+13. https://www.sgix.sg/about-us-2/
+14. https://www.de-cix.in/news/de-cix-india-indias-largest-interconnection-platform-crosses-500-connected-networks-making-it/
+15. https://www.jpix.ad.jp/en/
+16. https://nic.br/noticia/releases/ix-br-hits-record-50-tbit-s-of-aggregated-internet-traffic-driven-by-content-and-digital-services
+17. envoyproxy.io
+18. nginx.org
+19. https://www.ovhcloud.com/en/bare-metal/prices/
+20. https://www.backblaze.com/cloud-storage/transaction-pricing
